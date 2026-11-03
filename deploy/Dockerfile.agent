@@ -1,0 +1,24 @@
+# ddum-agent image: Alpine with the Docker CLI and Compose
+# plugin. It runs as root because it needs the Docker socket.
+# Build from the repository root:
+#   docker build -f deploy/Dockerfile.agent --build-arg VERSION=0.1.0 -t ddum-agent .
+
+# The compiler runs natively and cross-compiles, so an arm64 build needs no emulation.
+FROM --platform=$BUILDPLATFORM golang:1.27-alpine3.24@sha256:d200d2dd76b03a99b52651fd1325aff7dcd35422c35c01bac56571b0507f3deb AS build
+WORKDIR /src
+COPY go.mod go.sum ./
+RUN go mod download
+COPY . .
+ARG VERSION=dev
+ARG TARGETARCH
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=$TARGETARCH go build -trimpath \
+      -ldflags "-s -w -X github.com/DragonDrew/ddum/internal/buildinfo.Version=${VERSION}" \
+      -o /out/ddum-agent ./cmd/ddum-agent
+
+FROM alpine:3.24@sha256:be2656061b536c1883c4034790e21d0a09c5aaaf51968b89368a3c0371ea2c9a
+RUN apk add --no-cache ca-certificates tzdata docker-cli docker-cli-compose
+COPY --from=build /out/ddum-agent /usr/local/bin/ddum-agent
+VOLUME /data
+HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 CMD ["/usr/local/bin/ddum-agent", "healthcheck"]
+ENTRYPOINT ["/usr/local/bin/ddum-agent"]
+CMD ["run"]

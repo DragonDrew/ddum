@@ -1,0 +1,17 @@
+# Build output
+/bin/
+/dist/
+
+# Local runtime data and secrets
+/data/
+secrets/
+*.db
+*.db-wal
+*.db-shm
+.env
+
+# Editors / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

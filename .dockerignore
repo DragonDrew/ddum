@@ -1,0 +1,14 @@
+.git
+.github
+.vscode
+.idea
+bin
+dist
+data
+secrets
+docs
+deploy/*.yaml
+*.db
+*.db-wal
+*.db-shm
+.env

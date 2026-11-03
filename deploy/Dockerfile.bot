@@ -1,0 +1,31 @@
+# ddum-bot image: static binary, minimal non-root runtime.
+# Build from the repository root:
+#   docker build -f deploy/Dockerfile.bot --build-arg VERSION=0.1.0 -t ddum-bot .
+
+# The compiler runs natively and cross-compiles, so an arm64 build needs no emulation.
+FROM --platform=$BUILDPLATFORM golang:1.27-alpine3.24@sha256:d200d2dd76b03a99b52651fd1325aff7dcd35422c35c01bac56571b0507f3deb AS build
+WORKDIR /src
+COPY go.mod go.sum ./
+RUN go mod download
+COPY . .
+ARG VERSION=dev
+ARG TARGETARCH
+# BUILD_TAGS=rig adds the end-to-end rig's fake Discord; release images never have it.
+ARG BUILD_TAGS=
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=$TARGETARCH go build -trimpath -tags "$BUILD_TAGS" \
+      -ldflags "-s -w -X github.com/DragonDrew/ddum/internal/buildinfo.Version=${VERSION}" \
+      -o /out/ddum-bot ./cmd/ddum-bot \
+ && mkdir -p /out/data && chmod 700 /out/data
+
+# distroless/static carries CA certificates (for Discord and registries) and
+# time zone data, and runs as uid 65532.
+FROM gcr.io/distroless/static-debian12:nonroot@sha256:afa5c872c891853ca7fcf1f12c3edb23f7eeef36189728842dd51042ff57f7ab
+COPY --from=build /out/ddum-bot /usr/local/bin/ddum-bot
+# Owned by the runtime user so a new named volume mounted here is writable.
+COPY --from=build --chown=65532:65532 /out/data /data
+ENV DATABASE_PATH=/data/ddum.db
+VOLUME /data
+EXPOSE 8080
+HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 CMD ["/usr/local/bin/ddum-bot", "healthcheck"]
+ENTRYPOINT ["/usr/local/bin/ddum-bot"]
+CMD ["run"]

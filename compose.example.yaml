@@ -1,0 +1,98 @@
+# ddum on one Docker host: the bot, and this host's agent.
+#
+# Setup:
+#   1. Copy example.env to .env and fill it in (see the comments there), then: chmod 600 .env
+#   2. Copy this file to compose.yaml, next to .env.
+#   3. docker compose up -d
+#
+# The README has the full walkthrough, including Discord setup. Other hosts run only an
+# agent: see docs/operator-guide.md, "More hosts".
+#
+# Every value comes from .env. Each service receives only the values it needs, so the
+# agent never sees the Discord token.
+
+name: ddum
+
+services:
+
+  # Discord bot, and the API the agents report to.
+  ddum-bot:
+    image: ghcr.io/dragondrew/ddum-bot:0.10.0
+    restart: unless-stopped
+    labels:
+      ddum.self: "bot"          # marks ddum's own container; the agent updates it, after confirmation
+    # Published only if other hosts' agents need it. Bind to the LAN address, never 0.0.0.0
+    # on a host that faces the internet. A single host needs no port at all.
+    # ports:
+    #   - "192.168.1.10:8080:8080"
+    environment:
+      # Discord
+      DISCORD_TOKEN: ${DISCORD_TOKEN:?set DISCORD_TOKEN in .env}
+      DISCORD_APPLICATION_ID: ${DISCORD_APPLICATION_ID:?set DISCORD_APPLICATION_ID in .env}
+      DISCORD_GUILD_ID: ${DISCORD_GUILD_ID:?set DISCORD_GUILD_ID in .env}
+      NOTIFICATION_CHANNEL_ID: ${NOTIFICATION_CHANNEL_ID:?set NOTIFICATION_CHANNEL_ID in .env}
+      AUTHORIZED_DISCORD_IDS: ${AUTHORIZED_DISCORD_IDS:?set AUTHORIZED_DISCORD_IDS in .env}
+      # Shared key
+      AGENT_SHARED_KEY: ${AGENT_SHARED_KEY:?set AGENT_SHARED_KEY in .env}
+      # Time and logs
+      TZ: ${TZ:-UTC}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      # Registry logins (optional)
+      GHCR_TOKEN: ${GHCR_TOKEN:-}
+      # DOCKER_CONFIG: /config/docker   # only with a mounted registry login, see .env
+      # Bot behaviour, if you change the defaults in .env
+      COMMAND_LEASE_SECONDS: ${COMMAND_LEASE_SECONDS:-120}
+      COMMAND_EXPIRY_MINUTES: ${COMMAND_EXPIRY_MINUTES:-60}
+      STACK_MISSING_GRACE_HOURS: ${STACK_MISSING_GRACE_HOURS:-24}
+      NOTIFY_INDIVIDUAL_LIMIT: ${NOTIFY_INDIVIDUAL_LIMIT:-5}
+      REGISTRY_CHECK_INTERVAL: ${REGISTRY_CHECK_INTERVAL:-6h}
+      REGISTRY_CONCURRENCY_PER_HOST: ${REGISTRY_CONCURRENCY_PER_HOST:-4}
+    volumes:
+      - ddum-bot-data:/data     # the database and its key. Back it up; see the operator guide
+
+  # This host's agent. Finds the stacks here and applies the updates you approve.
+  ddum-agent:
+    image: ghcr.io/dragondrew/ddum-agent:0.10.0
+    restart: unless-stopped
+    depends_on:
+      ddum-bot:
+        condition: service_healthy
+    labels:
+      ddum.self: "agent"        # protected: ddum never updates an agent itself
+    environment:
+      # Where the bot is, and the shared key
+      BOT_URL: ${BOT_URL:-http://ddum-bot:8080}
+      AGENT_SHARED_KEY: ${AGENT_SHARED_KEY:?set AGENT_SHARED_KEY in .env}
+      BOT_PUBLIC_KEY: ${BOT_PUBLIC_KEY:-}
+      # This host
+      AGENT_ID: ${AGENT_ID:?set AGENT_ID in .env}
+      HOST_DISPLAY_NAME: ${HOST_DISPLAY_NAME:-homelab}
+      TZ: ${TZ:-UTC}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      GHCR_TOKEN: ${GHCR_TOKEN:-}
+      # Plain Compose stacks: the folders the agent may edit (same path inside and outside)
+      COMPOSE_ALLOWED_ROOTS: ${COMPOSE_ALLOWED_ROOTS:-/opt/stacks}
+      # Variables your stacks need from the agent's environment. Add STACK_ENV_<NAME> lines
+      # in .env; they're passed through here by name. See "Compose stacks" in .env.
+      # Portainer (only on a host that Portainer manages; otherwise leave these empty)
+      PORTAINER_URL: ${PORTAINER_URL:-}
+      PORTAINER_TOKEN: ${PORTAINER_TOKEN:-}
+      PORTAINER_ENDPOINT_ID: ${PORTAINER_ENDPOINT_ID:-}
+      PORTAINER_INSECURE_TLS: ${PORTAINER_INSECURE_TLS:-false}
+      PORTAINER_CA_FILE: ${PORTAINER_CA_FILE:-}
+      # Agent behaviour, if you change the defaults in .env
+      POLL_INTERVAL_SECONDS: ${POLL_INTERVAL_SECONDS:-30}
+      INVENTORY_INTERVAL_SECONDS: ${INVENTORY_INTERVAL_SECONDS:-300}
+      SNAPSHOT_RETENTION_COUNT: ${SNAPSHOT_RETENTION_COUNT:-3}
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock   # full control of this host's Docker
+      - ddum-agent-data:/data                       # the agent's key, journal and snapshots
+      # The stacks folder, mounted at the same path inside as on the host. Add more folders
+      # here, and list them in COMPOSE_ALLOWED_ROOTS.
+      - /opt/stacks:/opt/stacks
+      # A Portainer CA certificate, if you use PORTAINER_CA_FILE:
+      # - ./portainer-ca.pem:/run/portainer-ca.pem:ro
+
+volumes:
+  ddum-bot-data:
+  ddum-agent-data:
