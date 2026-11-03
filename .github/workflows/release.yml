@@ -2,7 +2,10 @@ name: release
 
 # Pushing a tag vX.Y.Z builds both images for both architectures, pushes them to
 # GHCR with an SBOM and provenance, signs them, and writes the GitHub release
-# from the matching section of CHANGELOG.md. To check a signature:
+# from the matching section of CHANGELOG.md. A tag with a suffix, such as
+# v0.10.1-rc.1, does the same as a pre-release: it never moves :latest, and its
+# notes fall back to a line saying it's a test build if CHANGELOG.md has no section.
+# To check a signature:
 #
 #   cosign verify ghcr.io/dragondrew/ddum-bot:<version> \
 #     --certificate-identity-regexp 'https://github.com/DragonDrew/ddum/.github/workflows/release.yml@.*' \
@@ -10,7 +13,7 @@ name: release
 
 on:
   push:
-    tags: ["v[0-9]+.[0-9]+.[0-9]+"]
+    tags: ["v[0-9]+.[0-9]+.[0-9]+", "v[0-9]+.[0-9]+.[0-9]+-*"]
 
 permissions:
   contents: read
@@ -49,7 +52,10 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
       - id: version
-        run: echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          case "$version" in *-*) echo "prerelease=true" >> "$GITHUB_OUTPUT" ;; *) echo "prerelease=false" >> "$GITHUB_OUTPUT" ;; esac
       - id: build
         uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
         with:
@@ -62,7 +68,7 @@ jobs:
           build-args: VERSION=${{ steps.version.outputs.version }}
           tags: |
             ghcr.io/dragondrew/ddum-${{ matrix.image }}:${{ steps.version.outputs.version }}
-            ghcr.io/dragondrew/ddum-${{ matrix.image }}:latest
+            ${{ steps.version.outputs.prerelease == 'false' && format('ghcr.io/dragondrew/ddum-{0}:latest', matrix.image) || '' }}
           labels: |
             org.opencontainers.image.title=ddum-${{ matrix.image }}
             org.opencontainers.image.version=${{ steps.version.outputs.version }}
@@ -84,5 +90,12 @@ jobs:
         run: |
           version="${GITHUB_REF_NAME#v}"
           awk -v v="$version" '$0 ~ "^## " v "( |$)" {on=1; next} /^## / {on=0} on' CHANGELOG.md > notes.md
-          [ -s notes.md ] || { echo "CHANGELOG.md has no section for $version"; exit 1; }
-          gh release create "$GITHUB_REF_NAME" --title "$version" --notes-file notes.md --prerelease
+          if [ ! -s notes.md ]; then
+            case "$version" in
+              *-*) echo "Test build, not a release. Used to check the release pipeline." > notes.md ;;
+              *) echo "CHANGELOG.md has no section for $version"; exit 1 ;;
+            esac
+          fi
+          flag=--prerelease
+          case "$version" in *-*) ;; *) flag= ;; esac
+          gh release create "$GITHUB_REF_NAME" --title "$version" --notes-file notes.md $flag
