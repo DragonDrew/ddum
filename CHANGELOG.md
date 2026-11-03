@@ -2,6 +2,16 @@
 
 What changed in each release, and what to do about it.
 
+## 0.10.1 (2026-11-03)
+
+A maintenance release. Nothing in how ddum behaves has changed.
+
+### Changes
+
+- **Dependencies:** the Docker API client, the database driver, the migrations library and the config parser are updated to their current releases.
+- **Build and release tooling:** the GitHub Actions and Docker actions used by CI and releases are updated to their current major versions.
+- **Release workflow:** a tag with a suffix, such as `v0.10.1-rc.1`, now runs as a pre-release. It never moves `:latest`.
+
 ## 0.10.0 (2026-11-03)
 
 The first public release, as a beta. Mostly safety and security.
