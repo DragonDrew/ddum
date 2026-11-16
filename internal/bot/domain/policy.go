@@ -70,7 +70,7 @@ type EffectivePolicy struct {
 // forces mode ignore and cannot be overridden from Discord.
 func ResolvePolicy(chain []PolicyLevel, labelIgnore bool) EffectivePolicy {
 	e := EffectivePolicy{
-		Mode: ModeManual, TagTrack: TrackSameMajor, VerifyTimeout: 120, VerifyStable: 30,
+		Mode: ModeManual, TagTrack: TrackAny, VerifyTimeout: 120, VerifyStable: 30,
 		Source: map[string]string{
 			FieldMode: SourceDefault, FieldTagTrack: SourceDefault, FieldAutoRollback: SourceFromMode,
 			FieldVerifyTimeout: SourceDefault, FieldVerifyStable: SourceDefault,

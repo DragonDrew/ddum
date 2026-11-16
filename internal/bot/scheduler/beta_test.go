@@ -29,6 +29,16 @@ func (e *env) foundBefore(containerName string) {
 	}
 }
 
+// trackGlobally sets the global tag_track, for tests about a narrower track
+// than the default.
+func (e *env) trackGlobally(track string) {
+	e.t.Helper()
+	if err := e.db.SetPolicy(context.Background(), store.PolicyKey{Level: domain.LevelGlobal},
+		domain.PolicyFields{TagTrack: &track}, owner, e.now); err != nil {
+		e.t.Fatal(err)
+	}
+}
+
 func (e *env) container(containerName string) store.Container {
 	e.t.Helper()
 	cs, err := e.db.Containers(context.Background(), store.ContainerFilter{})
@@ -240,9 +250,25 @@ func TestACheckWaitsForAHostThatJustFinishedAnOperation(t *testing.T) {
 	}
 }
 
+// The default tag_track is any, so a new major version is offered.
+func TestDefaultTrackOffersNewMajor(t *testing.T) {
+	e := newEnv(t)
+	d := e.push("arr:6.4.4.10685-ls327")
+	e.push("arr:7.0.3.10918-ls328")
+	e.deploy(map[string]string{"radarr": "arr:6.4.4.10685-ls327@" + d}, nil)
+	e.run()
+	if u := e.detected()["radarr"]; u.TargetVersion != "7.0.3.10918-ls328" {
+		t.Fatalf("offered %+v, want 7.0.3.10918-ls328", u)
+	}
+	if c := e.container("radarr"); c.NewerOutsideTrack != "" {
+		t.Fatalf("newer outside track = %q, want none", c.NewerOutsideTrack)
+	}
+}
+
 // A version outside tag_track is mentioned, and never offered.
 func TestNewerVersionOutsideTrackIsRecorded(t *testing.T) {
 	e := newEnv(t)
+	e.trackGlobally(domain.TrackSameMajor)
 	d := e.push("app:2026.12.1")
 	e.push("app:2027.1.0")
 	e.deploy(map[string]string{"web": "app:2026.12.1@" + d}, nil)

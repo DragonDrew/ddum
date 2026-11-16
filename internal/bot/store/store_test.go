@@ -87,16 +87,63 @@ func TestDatabaseFilesArePrivateAndMigrationsBackUpFirst(t *testing.T) {
 		t.Fatal(err)
 	}
 	db.Close()
-	// Applying the newest migration again fails on its existing columns, which
-	// does not matter here: the copy is made before it runs.
+	// Whether applying the newest migration again succeeds does not matter
+	// here: the copy is made before it runs.
 	if s, err := Open(context.Background(), path, &seqIDs{}); err == nil {
 		s.Close()
 	}
 	if st, err := os.Stat(path); err != nil || st.Mode().Perm() != 0o600 {
 		t.Fatalf("mode = %v, %v", st.Mode().Perm(), err)
 	}
-	if st, err := os.Stat(path + ".before-schema-7"); err != nil || st.Mode().Perm() != 0o600 {
+	if st, err := os.Stat(path + ".before-schema-8"); err != nil || st.Mode().Perm() != 0o600 {
 		t.Fatalf("no private copy before migrating: %v", err)
+	}
+}
+
+// Migration 8 moves the global tag_track from the old default, same-major, to
+// any. A different global value, and narrower rows elsewhere, stay.
+func TestMigrationMovesGlobalTagTrackToAny(t *testing.T) {
+	for _, tc := range []struct{ before, want string }{
+		{"same-major", "any"},
+		{"same-minor", "same-minor"},
+		{"pinned", "pinned"},
+	} {
+		path := filepath.Join(t.TempDir(), "ddum.db")
+		s, err := Open(context.Background(), path, &seqIDs{})
+		if err != nil {
+			t.Fatal(err)
+		}
+		s.Close()
+		db, err := sql.Open("sqlite", dsn(path, false))
+		if err != nil {
+			t.Fatal(err)
+		}
+		for _, q := range []string{
+			`UPDATE policies SET tag_track = '` + tc.before + `' WHERE scope_type = 'global'`,
+			`INSERT INTO policies (id, scope_type, scope_id, tag_track, updated_at)
+				VALUES ('p-host', 'host', 'h1', 'same-major', '2026-11-16T00:00:00Z')`,
+			`DELETE FROM goose_db_version WHERE version_id = 8`,
+		} {
+			if _, err := db.Exec(q); err != nil {
+				t.Fatal(err)
+			}
+		}
+		db.Close()
+		s, err = Open(context.Background(), path, &seqIDs{})
+		if err != nil {
+			t.Fatal(err)
+		}
+		var global, host string
+		if err := s.Reader().QueryRow(`SELECT tag_track FROM policies WHERE scope_type = 'global'`).Scan(&global); err != nil {
+			t.Fatal(err)
+		}
+		if err := s.Reader().QueryRow(`SELECT tag_track FROM policies WHERE scope_type = 'host'`).Scan(&host); err != nil {
+			t.Fatal(err)
+		}
+		s.Close()
+		if global != tc.want || host != "same-major" {
+			t.Errorf("from %s: global = %s, host = %s; want %s, same-major", tc.before, global, host, tc.want)
+		}
 	}
 }
 
@@ -106,8 +153,8 @@ func TestMigrationsApplyToEmptyDatabase(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if v != 7 {
-		t.Fatalf("schema version = %d, want 7", v)
+	if v != 8 {
+		t.Fatalf("schema version = %d, want 8", v)
 	}
 	for _, table := range []string{"agents", "hosts", "stacks", "containers", "update_groups",
 		"update_group_members", "policies", "operations", "operation_events", "updates",
@@ -174,7 +221,7 @@ func TestGlobalPolicySeeded(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if mode != "manual" || track != "same-major" || rollback.Valid || timeout != 120 || stable != 30 {
+	if mode != "manual" || track != "any" || rollback.Valid || timeout != 120 || stable != 30 {
 		t.Fatalf("global policy = %s %s %v %d %d", mode, track, rollback, timeout, stable)
 	}
 	if err := exec(t, s, `INSERT INTO policies (id, scope_type, scope_id, updated_at) VALUES ('p2','global',NULL,?)`, now); err == nil {

@@ -2,6 +2,14 @@
 
 What changed in each release, and what to do about it.
 
+## Unreleased
+
+**Upgrading:** the bot's database moves to schema 8 at startup, and a copy is kept first as `ddum.db.before-schema-8`.
+
+### Changes
+
+- **New major versions are offered by default.** `tag_track` now defaults to `any`, so a container on `6.4.4` is offered `7.0.3`, where it used to stay on 6.x. On upgrade, a global `tag_track` of `same-major` becomes `any`. Other global values and every narrower policy stay as they are. With the default `mode: manual` a major upgrade still waits for approval. To stay within a major version, use `/policy set tag_track:same-major` for a container, stack, host, or everything.
+
 ## 0.10.1 (2026-11-03)
 
 A maintenance release. Nothing in how ddum behaves has changed.

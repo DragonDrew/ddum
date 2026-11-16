@@ -17,7 +17,7 @@ const GlobalPolicyID = "00000000-0000-7000-8000-000000000001"
 // Built-in global values that "clear" restores, since the global level must
 // always define mode, tag_track, and the verify timings.
 var globalDefaults = map[string]any{
-	domain.FieldMode: domain.ModeManual, domain.FieldTagTrack: domain.TrackSameMajor,
+	domain.FieldMode: domain.ModeManual, domain.FieldTagTrack: domain.TrackAny,
 	domain.FieldAutoRollback: nil, domain.FieldVerifyTimeout: 120, domain.FieldVerifyStable: 30,
 }
 

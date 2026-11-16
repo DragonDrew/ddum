@@ -162,6 +162,7 @@ func (e *env) detected() map[string]store.Update {
 // exactly once.
 func TestDetectsEachKindExactlyOnce(t *testing.T) {
 	e := newEnv(t)
+	e.trackGlobally(domain.TrackSameMajor)
 	dLatest := e.push("app:latest")
 	dVer := e.push("ver:1.2.3")
 	dLs := e.push("arr:4.0.10.2544-ls257")

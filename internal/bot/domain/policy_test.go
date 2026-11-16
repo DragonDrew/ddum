@@ -48,7 +48,7 @@ func TestResolvePolicyAutoRollbackAndLabel(t *testing.T) {
 		t.Fatalf("ddum.ignore must force ignore over Discord policy: %+v", e)
 	}
 	e = ResolvePolicy(nil, false)
-	if e.Mode != ModeManual || e.TagTrack != TrackSameMajor || e.Source[FieldMode] != SourceDefault {
+	if e.Mode != ModeManual || e.TagTrack != TrackAny || e.Source[FieldMode] != SourceDefault {
 		t.Fatalf("built-in defaults: %+v", e)
 	}
 }
