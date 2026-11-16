@@ -278,7 +278,14 @@ func TestBadSignatureAndProtocol(t *testing.T) {
 		code   string
 	}{
 		{"tampered signature", func(q *http.Request) {
-			q.Header.Set(protocol.HeaderSignature, "ab"+q.Header.Get(protocol.HeaderSignature)[2:])
+			// Always a different first character: the signature changes every
+			// run, and a fixed replacement would sometimes leave it unchanged.
+			sig := q.Header.Get(protocol.HeaderSignature)
+			first := "0"
+			if sig[0] == '0' {
+				first = "1"
+			}
+			q.Header.Set(protocol.HeaderSignature, first+sig[1:])
 		}, 401, protocol.CodeBadSignature},
 		{"missing headers", func(q *http.Request) { q.Header.Del(protocol.HeaderTimestamp) }, 401, protocol.CodeBadSignature},
 		{"other agent's header", func(q *http.Request) { q.Header.Set(protocol.HeaderAgentID, agentB) }, 401, protocol.CodeBadSignature},
