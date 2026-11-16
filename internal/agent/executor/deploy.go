@@ -160,7 +160,7 @@ func (x *Executor) plan(p protocol.DeployPayload) ([]stackPlan, error) {
 			sp.services = append(sp.services, s)
 		}
 		if isPortainer {
-			if err := x.planPortainer(context.Background(), &sp, t); err != nil {
+			if err := x.planPortainer(context.Background(), &sp); err != nil {
 				return nil, err
 			}
 		}
@@ -299,7 +299,11 @@ func (x *Executor) deploy(ctx context.Context, p protocol.DeployPayload, progres
 			return res, fail(protocol.FailInternal, "snapshot: %v", err)
 		}
 		res.Snapshots = append(res.Snapshots, protocol.SnapshotRef{SnapshotID: snapID, StackID: p.Targets[i].StackID, Created: true})
-		x.Journal.Update(p.OperationID, func(e *Entry) { e.SnapshotIDs = append(e.SnapshotIDs, snapID) })
+		// Restoring after an agent restart needs the snapshot, so nothing is
+		// recreated unless the journal holds it.
+		if _, err := x.Journal.Update(p.OperationID, func(e *Entry) { e.SnapshotIDs = append(e.SnapshotIDs, snapID) }); err != nil {
+			return res, fail(protocol.FailInternal, "journal: %v", err)
+		}
 
 		// Pull, tag, and check the digest before recreating anything.
 		for _, s := range sp.services {

@@ -40,16 +40,22 @@ func (n *Notifier) Run(ctx context.Context) {
 		case f := <-n.queue:
 			n.send(context.Background(), f)
 		case <-ctx.Done():
-			drain, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-			defer cancel()
-			for {
-				select {
-				case f := <-n.queue:
-					n.send(drain, f)
-				default:
-					return
-				}
-			}
+			n.drain()
+			return
+		}
+	}
+}
+
+// drain sends what is still queued, giving up after a few seconds.
+func (n *Notifier) drain() {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	for {
+		select {
+		case f := <-n.queue:
+			n.send(ctx, f)
+		default:
+			return
 		}
 	}
 }

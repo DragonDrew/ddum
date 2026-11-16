@@ -216,7 +216,7 @@ func (e *env) finishOperation(hostID string) {
 }
 
 // A container just rolled back still looks like the new version until its host
-// reports, and a check must not conclude from that that it needs no update.
+// reports, and a check must not conclude from this that it needs no update.
 func TestACheckWaitsForAHostThatJustFinishedAnOperation(t *testing.T) {
 	e := newEnv(t)
 	d := e.push("app:1.0.0")

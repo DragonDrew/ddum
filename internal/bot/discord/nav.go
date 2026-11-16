@@ -99,7 +99,7 @@ func (r *Router) allPending(ctx context.Context) Response {
 	if len(views) == 0 {
 		return updateCard(iconOK, "Up to date", "Nothing is waiting for approval.", colorOK)
 	}
-	return updateTo(summaryMessage("Waiting for approval", views, true))
+	return updateTo(summaryMessage("Waiting for approval", views))
 }
 
 // hostView shows one host's waiting stacks and groups on the card.

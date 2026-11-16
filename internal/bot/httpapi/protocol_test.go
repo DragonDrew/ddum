@@ -152,7 +152,7 @@ func composeContainer(dockerID, project, service string) docker.Container {
 func (r *rig) rawPoll(agentID string, sigTime time.Time, mutate func(*http.Request)) (*http.Response, []byte) {
 	r.t.Helper()
 	body, _ := json.Marshal(protocol.PollRequest{ProtocolVersion: protocol.Version, AgentID: agentID, HostName: "raw"})
-	req, _ := http.NewRequest("POST", r.srv.URL+protocol.PathPoll, bytes.NewReader(body))
+	req, _ := http.NewRequest(http.MethodPost, r.srv.URL+protocol.PathPoll, bytes.NewReader(body))
 	if r.keys == nil {
 		r.keys = map[string]ed25519.PrivateKey{}
 	}
@@ -293,7 +293,7 @@ func TestBadSignatureAndProtocol(t *testing.T) {
 		})
 	}
 	resp, body := r.rawPoll(agentA, r.clock.Now(), func(q *http.Request) { q.Header.Set(protocol.HeaderProtocol, "3") })
-	if !bytes.Contains(body, []byte(`"supported":[1,2]`)) || resp.StatusCode != 426 {
+	if !bytes.Contains(body, []byte(`"supported":[1,2]`)) || resp.StatusCode != http.StatusUpgradeRequired {
 		t.Fatalf("426 body = %s", body)
 	}
 }
@@ -301,7 +301,7 @@ func TestBadSignatureAndProtocol(t *testing.T) {
 func TestBodyAgentIDMustMatchHeader(t *testing.T) {
 	r := newRig(t)
 	body, _ := json.Marshal(protocol.PollRequest{ProtocolVersion: protocol.Version, AgentID: agentB})
-	req, _ := http.NewRequest("POST", r.srv.URL+protocol.PathPoll, bytes.NewReader(body))
+	req, _ := http.NewRequest(http.MethodPost, r.srv.URL+protocol.PathPoll, bytes.NewReader(body))
 	priv, err := protocol.NewKey()
 	if err != nil {
 		t.Fatal(err)
@@ -322,7 +322,7 @@ func TestBodyAgentIDMustMatchHeader(t *testing.T) {
 func TestInventoryTooLarge(t *testing.T) {
 	r := newRig(t)
 	body := bytes.Repeat([]byte(" "), protocol.MaxInventoryBodyBytes+1)
-	req, _ := http.NewRequest("PUT", r.srv.URL+protocol.PathInventory, bytes.NewReader(body))
+	req, _ := http.NewRequest(http.MethodPut, r.srv.URL+protocol.PathInventory, bytes.NewReader(body))
 	protocol.SignHTTPRequest(req, key, agentA, body, r.clock.Now())
 	resp, err := r.srv.Client().Do(req)
 	if err != nil {

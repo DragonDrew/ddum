@@ -201,7 +201,7 @@ func TestHTTPRoundTrip(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	req, err := http.NewRequest("POST", srv.URL+"/v1/agent/poll?name=a%20b&x=1", bytes.NewReader(testBody))
+	req, err := http.NewRequest(http.MethodPost, srv.URL+"/v1/agent/poll?name=a%20b&x=1", bytes.NewReader(testBody))
 	if err != nil {
 		t.Fatal(err)
 	}

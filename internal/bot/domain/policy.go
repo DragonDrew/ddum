@@ -2,7 +2,6 @@ package domain
 
 import (
 	"strings"
-	"time"
 
 	"github.com/distribution/reference"
 )
@@ -170,12 +169,6 @@ func RunningDigests(repo string, repoDigests []string) []string {
 		}
 	}
 	return out
-}
-
-// SnoozeActive reports whether a snooze is in force: not removed, and either
-// indefinite (zero until) or not yet expired.
-func SnoozeActive(until time.Time, removed bool, now time.Time) bool {
-	return !removed && (until.IsZero() || until.After(now))
 }
 
 // Displayed states.

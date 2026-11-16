@@ -73,18 +73,18 @@ type Loop struct {
 }
 
 // Run polls until ctx is cancelled.
-func (l *Loop) Run(ctx context.Context) error {
+func (l *Loop) Run(ctx context.Context) {
 	for {
 		wait := l.Step(ctx)
 		if ctx.Err() != nil {
-			return nil
+			return
 		}
 		l.writeHeartbeat(wait)
 		t := time.NewTimer(wait)
 		select {
 		case <-ctx.Done():
 			t.Stop()
-			return nil
+			return
 		case <-t.C:
 		case <-l.Wake:
 			t.Stop()

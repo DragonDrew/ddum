@@ -62,7 +62,7 @@ make docker VERSION=rig TAGS=rig >/dev/null
 
 log "building the driver"
 docker run --rm -u "$(id -u):$(id -g)" -e HOME=/tmp -e CGO_ENABLED=0 -e GOFLAGS=-buildvcs=false \
-	-v "$REPO:/src:ro" -v "$RIG/bin:/out" -w /src golang:1.27-alpine3.24 \
+	-v "$REPO:/src:ro" -v "$RIG/bin:/out" -w /src golang:1.27.4-alpine3.24 \
 	go build -tags rig -o /out/driver ./deploy/test-rig/driver
 DRIVER=$RIG/bin/driver
 

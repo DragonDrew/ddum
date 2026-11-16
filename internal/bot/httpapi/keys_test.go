@@ -19,7 +19,7 @@ import (
 func (r *rig) post(agentID string, shared []byte, priv ed25519.PrivateKey) (*http.Response, []byte) {
 	r.t.Helper()
 	body, _ := json.Marshal(protocol.PollRequest{ProtocolVersion: protocol.Version, AgentID: agentID, HostName: "h"})
-	req, _ := http.NewRequest("POST", r.srv.URL+protocol.PathPoll, bytes.NewReader(body))
+	req, _ := http.NewRequest(http.MethodPost, r.srv.URL+protocol.PathPoll, bytes.NewReader(body))
 	if _, err := protocol.SignHTTPRequestV2(req, shared, priv, agentID, body, r.clock.Now()); err != nil {
 		r.t.Fatal(err)
 	}
@@ -100,12 +100,12 @@ func TestAWrongSharedKeyCannotRegister(t *testing.T) {
 func TestAReplayedRequestIsRefused(t *testing.T) {
 	r := newRig(t)
 	body, _ := json.Marshal(protocol.PollRequest{ProtocolVersion: protocol.Version, AgentID: agentA, HostName: "h"})
-	req, _ := http.NewRequest("POST", r.srv.URL+protocol.PathPoll, bytes.NewReader(body))
+	req, _ := http.NewRequest(http.MethodPost, r.srv.URL+protocol.PathPoll, bytes.NewReader(body))
 	if _, err := protocol.SignHTTPRequestV2(req, key, newKey(t), agentA, body, r.clock.Now()); err != nil {
 		t.Fatal(err)
 	}
 	send := func() int {
-		again, _ := http.NewRequest("POST", r.srv.URL+protocol.PathPoll, bytes.NewReader(body))
+		again, _ := http.NewRequest(http.MethodPost, r.srv.URL+protocol.PathPoll, bytes.NewReader(body))
 		again.Header = req.Header.Clone()
 		resp, err := r.srv.Client().Do(again)
 		if err != nil {
@@ -126,7 +126,7 @@ func TestAReplayedRequestIsRefused(t *testing.T) {
 func (r *rig) legacyPoll(agentID string) (*http.Response, []byte) {
 	r.t.Helper()
 	body, _ := json.Marshal(protocol.PollRequest{ProtocolVersion: 1, AgentID: agentID, HostName: "old"})
-	req, _ := http.NewRequest("POST", r.srv.URL+protocol.PathPoll, bytes.NewReader(body))
+	req, _ := http.NewRequest(http.MethodPost, r.srv.URL+protocol.PathPoll, bytes.NewReader(body))
 	protocol.SignHTTPRequest(req, key, agentID, body, r.clock.Now())
 	resp, err := r.srv.Client().Do(req)
 	if err != nil {

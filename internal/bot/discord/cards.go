@@ -217,7 +217,7 @@ func (r *Router) checkResultMessage(ctx context.Context, card *checkCard) (Messa
 		m.Embeds[0].Timestamp = stamp(r.Now())
 		return m, nil
 	}
-	m := summaryMessage("Check finished · "+card.label, views, true)
+	m := summaryMessage("Check finished · "+card.label, views)
 	m.Embeds[0].Title = "🔎 Check finished · " + escape(card.label)
 	m.Embeds[0].Description = stats
 	m.Embeds[0].Timestamp = stamp(r.Now())

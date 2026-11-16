@@ -43,7 +43,7 @@ func portainerStackID(st protocol.Stack) (int, bool) {
 // pulls and tags as for Compose, and the tag-source edits applied to the
 // stack file or its Env list in memory. Git-based stacks take
 // same-tag digest updates only.
-func (x *Executor) planPortainer(ctx context.Context, sp *stackPlan, t protocol.DeployTarget) error {
+func (x *Executor) planPortainer(ctx context.Context, sp *stackPlan) error {
 	if x.Portainer == nil {
 		return fail(protocol.FailUnsupported, "stack %s is managed by Portainer, and the Portainer provider is not enabled", sp.stack.Fingerprint)
 	}

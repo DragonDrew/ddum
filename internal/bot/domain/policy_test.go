@@ -3,7 +3,6 @@ package domain
 import (
 	"reflect"
 	"testing"
-	"time"
 )
 
 func s(v string) *string { return &v }
@@ -91,19 +90,6 @@ func hex64(c string) string {
 		out += c
 	}
 	return out
-}
-
-func TestSnoozeActive(t *testing.T) {
-	now := time.Date(2026, 10, 1, 0, 0, 0, 0, time.UTC)
-	if !SnoozeActive(time.Time{}, false, now) {
-		t.Error("indefinite snooze is active")
-	}
-	if !SnoozeActive(now.Add(time.Hour), false, now) || SnoozeActive(now, false, now) || SnoozeActive(now.Add(-time.Hour), false, now) {
-		t.Error("timed snooze is active only until it expires")
-	}
-	if SnoozeActive(time.Time{}, true, now) {
-		t.Error("removed snooze is not active")
-	}
 }
 
 func TestUpdateStatePrecedence(t *testing.T) {

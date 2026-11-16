@@ -1,6 +1,7 @@
 package store
 
 import (
+	"errors"
 	"testing"
 	"time"
 
@@ -197,7 +198,7 @@ func TestInventoryPendingHostIsStored(t *testing.T) {
 
 func TestInventoryUnknownAgent(t *testing.T) {
 	s := openTest(t)
-	if _, err := s.ApplyInventory(bgCtx, agentA, protocol.Inventory{}, t0); err != ErrUnknownAgent {
+	if _, err := s.ApplyInventory(bgCtx, agentA, protocol.Inventory{}, t0); !errors.Is(err, ErrUnknownAgent) {
 		t.Fatalf("err = %v, want ErrUnknownAgent", err)
 	}
 }

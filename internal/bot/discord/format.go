@@ -160,7 +160,7 @@ func lines(ls []string, limit int, more string) string {
 			tail = fmt.Sprintf("\n…and %d more. %s", len(ls)-i-1, more)
 		}
 		if b.Len()+len(l)+1+len(tail) > limit {
-			b.WriteString(fmt.Sprintf("…and %d more. %s", len(ls)-i, more))
+			fmt.Fprintf(&b, "…and %d more. %s", len(ls)-i, more)
 			return b.String()
 		}
 		b.WriteString(l)

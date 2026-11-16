@@ -4,7 +4,7 @@
 #   docker build -f deploy/Dockerfile.agent --build-arg VERSION=0.1.0 -t ddum-agent .
 
 # The compiler runs natively and cross-compiles, so an arm64 build needs no emulation.
-FROM --platform=$BUILDPLATFORM golang:1.27-alpine3.24@sha256:d200d2dd76b03a99b52651fd1325aff7dcd35422c35c01bac56571b0507f3deb AS build
+FROM --platform=$BUILDPLATFORM golang:1.27.4-alpine3.24@sha256:70bd7ddea8b6cbe5d6943cde279d6b67feb10cc924fb9100d1d8757c1575b280 AS build
 WORKDIR /src
 COPY go.mod go.sum ./
 RUN go mod download
@@ -15,7 +15,7 @@ RUN CGO_ENABLED=0 GOOS=linux GOARCH=$TARGETARCH go build -trimpath \
       -ldflags "-s -w -X github.com/DragonDrew/ddum/internal/buildinfo.Version=${VERSION}" \
       -o /out/ddum-agent ./cmd/ddum-agent
 
-FROM alpine:3.24@sha256:be2656061b536c1883c4034790e21d0a09c5aaaf51968b89368a3c0371ea2c9a
+FROM alpine:3.24@sha256:f59abe656b692d901e184be3445e084786602108599d2a51d229c0f5a48c71bf
 RUN apk add --no-cache ca-certificates tzdata docker-cli docker-cli-compose
 COPY --from=build /out/ddum-agent /usr/local/bin/ddum-agent
 VOLUME /data

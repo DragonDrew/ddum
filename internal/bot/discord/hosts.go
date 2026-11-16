@@ -138,7 +138,7 @@ func (r *Router) approve(ctx context.Context, it Interaction, h store.Host, skip
 		return approved, "**" + escape(h.DisplayName) + "** was already approved.", nil
 	}
 	r.Log.Info("host approved", "host_id", h.ID, "by", it.UserID)
-	r.editRegistrations(ctx, approved, false, "Approved by <@"+it.UserID+">", skipMessageID)
+	r.editRegistrations(ctx, approved, "Approved by <@"+it.UserID+">", skipMessageID)
 	return approved, "Approved **" + escape(h.DisplayName) + "**.", nil
 }
 
@@ -245,10 +245,10 @@ func (r *Router) hostRemoveConfirmed(ctx context.Context, it Interaction, hostID
 	status := verb + " by <@" + it.UserID + ">"
 	if card, err := r.Store.DiscordMessageAt(ctx, it.ChannelID, it.MessageID); err == nil && card.EntityType == entityRegistration {
 		// The click came from the registration card itself.
-		r.editRegistrations(ctx, removed, false, status, it.MessageID)
+		r.editRegistrations(ctx, removed, status, it.MessageID)
 		return updateTo(registrationMessage(removed, false, status))
 	}
-	r.editRegistrations(ctx, removed, false, status, "")
+	r.editRegistrations(ctx, removed, status, "")
 	return updateCard("✖️", verb+" · "+escape(h.DisplayName), "Its agent is refused from now on. Its inventory and history are kept.", colorMuted)
 }
 
@@ -302,7 +302,7 @@ func (r *Router) hostReassignConfirmed(ctx context.Context, it Interaction, host
 	}
 	if res.RetiredHost != "" {
 		if retired, err := r.Store.Host(ctx, res.RetiredHost); err == nil {
-			r.editRegistrations(ctx, retired, false, "Merged into "+escape(res.Host.DisplayName)+" by <@"+it.UserID+">", "")
+			r.editRegistrations(ctx, retired, "Merged into "+escape(res.Host.DisplayName)+" by <@"+it.UserID+">", "")
 		}
 	}
 	if r.Notify != nil {
@@ -401,7 +401,7 @@ func registrationMessage(h store.Host, collision bool, status string) Message {
 
 // editRegistrations rewrites every stored registration notice of h to show
 // status and drop its buttons.
-func (r *Router) editRegistrations(ctx context.Context, h store.Host, collision bool, status, skipMessageID string) {
+func (r *Router) editRegistrations(ctx context.Context, h store.Host, status, skipMessageID string) {
 	msgs, err := r.Store.DiscordMessages(ctx, entityRegistration, h.ID)
 	if err != nil {
 		r.Log.Warn("load registration notices", "host_id", h.ID, "err", err)
@@ -411,7 +411,7 @@ func (r *Router) editRegistrations(ctx context.Context, h store.Host, collision 
 		if m.MessageID == skipMessageID {
 			continue
 		}
-		if err := r.Gateway.Edit(ctx, m.ChannelID, m.MessageID, registrationMessage(h, collision, status)); err != nil {
+		if err := r.Gateway.Edit(ctx, m.ChannelID, m.MessageID, registrationMessage(h, false, status)); err != nil {
 			r.Log.Warn("edit registration notice", "host_id", h.ID, "message_id", m.MessageID, "err", err)
 		}
 	}

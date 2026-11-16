@@ -74,7 +74,7 @@ func (n *Notifier) notifyNewUpdates(ctx context.Context) {
 		limit = 5
 	}
 	if len(views) > limit {
-		if _, ok := n.post(ctx, "update summary", summaryMessage("Updates available", views, true)); !ok {
+		if _, ok := n.post(ctx, "update summary", summaryMessage("Updates available", views)); !ok {
 			return // retried after the next check
 		}
 	} else {
@@ -185,7 +185,7 @@ func (n *Notifier) MaintenanceSummary(ctx context.Context) {
 			n.post(ctx, "maintenance summary", notice(iconOK, "Maintenance mode is off", "No updates are pending.", colorOK))
 			return
 		}
-		n.post(ctx, "maintenance summary", summaryMessage("Maintenance is over · pending updates", views, true))
+		n.post(ctx, "maintenance summary", summaryMessage("Maintenance is over · pending updates", views))
 	})
 }
 

@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"slices"
 	"strings"
 	"time"
@@ -325,7 +326,10 @@ func (s *Store) ImagePlatforms(ctx context.Context, repo, digest string) ([]stri
 		return nil, false, err
 	}
 	var out []string
-	return out, true, json.Unmarshal([]byte(raw), &out)
+	if err := json.Unmarshal([]byte(raw), &out); err != nil {
+		return nil, false, fmt.Errorf("stored platforms of %s@%s: %w", repo, digest, err)
+	}
+	return out, true, nil
 }
 
 // SetImagePlatforms stores the platforms of repo@digest.

@@ -30,15 +30,6 @@ func (e *APIError) Error() string {
 	return fmt.Sprintf("bot returned %d: %s", e.Status, e.Body)
 }
 
-// Code returns the error code of err if it is an *APIError, else "".
-func Code(err error) string {
-	var ae *APIError
-	if errors.As(err, &ae) {
-		return ae.Body.Code
-	}
-	return ""
-}
-
 // pinBotKey remembers the bot's key for every later response.
 func (h *HTTP) pinBotKey(key string) error {
 	h.mu.Lock()

@@ -81,7 +81,7 @@ type Server struct {
 	// LeaseSeconds is COMMAND_LEASE_SECONDS (default 120).
 	LeaseSeconds int
 	// AfterFinish, if set, runs after an operation finishes (auto-rollback).
-	//. It must not block.
+	// It must not block.
 	AfterFinish func(op store.Operation)
 	// AfterInventory, if set, runs after each applied inventory (the
 	// auto-update engine re-evaluates eligibility). It must not block.

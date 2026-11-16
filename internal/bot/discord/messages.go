@@ -97,9 +97,9 @@ func scopeMessage(v scopeView, offerID string) Message {
 }
 
 // summaryMessage groups many scopes by host: one field per host
-// listing its waiting stacks and groups. With nav, a menu opens a host (or,
-// with one host, a stack or group) on the same card.
-func summaryMessage(title string, views []scopeView, nav bool) Message {
+// listing its waiting stacks and groups. A menu opens a host (or, with one
+// host, a stack or group) on the same card.
+func summaryMessage(title string, views []scopeView) Message {
 	sort.Slice(views, func(i, j int) bool {
 		if views[i].Host.DisplayName != views[j].Host.DisplayName {
 			return views[i].Host.DisplayName < views[j].Host.DisplayName
@@ -115,10 +115,7 @@ func summaryMessage(title string, views []scopeView, nav bool) Message {
 		}
 		byHost[h] = append(byHost[h], v)
 	}
-	e := &discordgo.MessageEmbed{Title: iconUpdates + " " + title, Color: colorWarn}
-	if nav {
-		e.Footer = footer("Pick one below to see it here")
-	}
+	e := &discordgo.MessageEmbed{Title: iconUpdates + " " + title, Color: colorWarn, Footer: footer("Pick one below to see it here")}
 	for i, h := range hosts {
 		if i == 24 {
 			e.Fields = append(e.Fields, field("…", "more hosts · /update list", false))
@@ -126,11 +123,7 @@ func summaryMessage(title string, views []scopeView, nav bool) Message {
 		}
 		e.Fields = append(e.Fields, field(iconHost+" "+escape(h), scopesTable(byHost[h], maxFieldValue), false))
 	}
-	m := Message{Embeds: []*discordgo.MessageEmbed{e}, Components: []discordgo.MessageComponent{}}
-	if nav {
-		m.Components = navMenu(views)
-	}
-	return m
+	return Message{Embeds: []*discordgo.MessageEmbed{e}, Components: navMenu(views)}
 }
 
 // mergeSuggestionMessage proposes /stack merge for a renamed stack.

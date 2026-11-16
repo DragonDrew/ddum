@@ -9,6 +9,9 @@ What changed in each release, and what to do about it.
 ### Changes
 
 - **New major versions are offered by default.** `tag_track` now defaults to `any`, so a container on `6.4.4` is offered `7.0.3`, where it used to stay on 6.x. On upgrade, a global `tag_track` of `same-major` becomes `any`. Other global values and every narrower policy stay as they are. With the default `mode: manual` a major upgrade still waits for approval. To stay within a major version, use `/policy set tag_track:same-major` for a container, stack, host, or everything.
+- **Security updates:** Go 1.27.4 fixes a vulnerability in `net/http` (GO-2026-6859), and `klauspost/compress` 1.20.4 fixes a panic on crafted input (GO-2026-6865). Every other dependency is on its current release.
+- **Base images:** the bot runs on `distroless/static-debian13`, and the agent on the current Alpine 3.24.
+- **A deploy stops if its snapshot can't be recorded.** The agent's journal must hold the snapshot before any container is recreated, so a restarted agent can still restore the stack. Before, a failed journal write was ignored.
 
 ## 0.10.1 (2026-11-03)
 
