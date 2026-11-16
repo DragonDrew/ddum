@@ -2,9 +2,11 @@
 
 What changed in each release, and what to do about it.
 
-## Unreleased
+## 0.11.0 (2026-11-16)
 
-**Upgrading:** the bot's database moves to schema 8 at startup, and a copy is kept first as `ddum.db.before-schema-8`.
+New major versions are now offered by default, with security updates to Go and its dependencies.
+
+**Upgrading:** update the bot first, then each agent. The bot's database moves to schema 8 at startup, and a copy is kept first as `ddum.db.before-schema-8`. If you roll back, 0.10.1 still starts on that database.
 
 ### Changes
 
