@@ -14,8 +14,10 @@ This guide covers running ddum after the [README quickstart](../README.md#setup)
   - [An agent as a Portainer stack](#an-agent-as-a-portainer-stack)
 - [Network exposure](#network-exposure)
 - [Mounts and allowed roots](#mounts-and-allowed-roots)
+  - [Common layouts](#common-layouts)
 - [Variables your stacks need](#variables-your-stacks-need)
 - [Portainer](#portainer)
+  - [Updating Portainer itself](#updating-portainer-itself)
 - [Secrets](#secrets)
 - [Labels](#labels)
 - [Scheduled deploys](#scheduled-deploys)
@@ -96,14 +98,14 @@ Run one agent on each additional Docker host. Agents connect to the bot, so the 
    ```
 
 2. **Give the new host the same agent key.** Copy the `AGENT_SHARED_KEY` value from the bot host's `.env` into a `.env` next to the new agent's `compose.yaml` (`chmod 600`), over a secure channel.
-3. **Generate a new agent ID** on the new host with `docker run --rm ghcr.io/dragondrew/ddum-agent:0.10.0 gen-id`, and put it in that `.env` as `AGENT_ID`. Every host needs its own ID.
+3. **Generate a new agent ID** on the new host with `docker run --rm ghcr.io/dragondrew/ddum-agent:0.11.0 gen-id`, and put it in that `.env` as `AGENT_ID`. Every host needs its own ID.
 4. **Write the agent's `compose.yaml`:**
 
    ```yaml
    name: ddum-agent
    services:
      ddum-agent:
-       image: ghcr.io/dragondrew/ddum-agent:0.10.0
+       image: ghcr.io/dragondrew/ddum-agent:0.11.0
        restart: unless-stopped
        labels:
          ddum.self: "agent"
@@ -136,7 +138,7 @@ On a host that Portainer manages, including one that runs only `portainer_agent`
    ```yaml
    services:
      ddum-agent:
-       image: ghcr.io/dragondrew/ddum-agent:0.10.0
+       image: ghcr.io/dragondrew/ddum-agent:0.11.0
        restart: unless-stopped
        labels:
          ddum.self: "agent"
@@ -158,7 +160,7 @@ On a host that Portainer manages, including one that runs only `portainer_agent`
 
 3. **Fill in the stack's Environment variables in Portainer:**
    - `AGENT_SHARED_KEY`: the same key as the bot's.
-   - `AGENT_ID`: a new UUID for this host, from `docker run --rm ghcr.io/dragondrew/ddum-agent:0.10.0 gen-id` or PowerShell's `[guid]::NewGuid().ToString()`.
+   - `AGENT_ID`: a new UUID for this host, from `docker run --rm ghcr.io/dragondrew/ddum-agent:0.11.0 gen-id` or PowerShell's `[guid]::NewGuid().ToString()`.
    - `HOST_DISPLAY_NAME`: the name shown in Discord.
    - `PORTAINER_URL`, `PORTAINER_TOKEN`, and `PORTAINER_ENDPOINT_ID`: the Portainer server, an access token from it, and this host's environment ID. The ID is the number in Portainer's URL when the environment is open.
 4. **Deploy, then approve:** deploy the stack, then approve **New host wants to register** in Discord.
@@ -167,7 +169,7 @@ On a host that Portainer manages, including one that runs only `portainer_agent`
 - **No stack folders to mount:** Portainer keeps the stack files on its server, so the agent needs no stack folders. Mount a folder (at the same path) and set `COMPOSE_ALLOWED_ROOTS` only for plain Compose projects kept on that host.
 - **Variables are visible in Portainer:** Portainer stores the stack's variables and shows them to its admins.
 - **Upgrading the agent:** the agent never updates itself. To upgrade it, change the image tag in the stack in Portainer.
-- **`portainer_agent` itself:** ddum lists it but never redeploys it, because it is not part of a stack. Label it `ddum.protected=true` or `ddum.ignore=true` to silence its update notices.
+- **`portainer_agent` itself:** started with `docker run`, ddum lists it but never redeploys it, because it is not part of a stack. Either label it `ddum.protected=true` or `ddum.ignore=true` to silence its update notices, or run it as a plain Compose project so ddum can update it: see [Updating Portainer itself](#updating-portainer-itself).
 
 A host that registers stays `pending` and gets no commands until someone approves it. Each host's name is only a label; you can change it later with `/host rename`.
 
@@ -202,6 +204,60 @@ To deploy a Compose stack, the agent edits the image tag in its files and runs `
 - **Dockge and similar tools,** which keep plain Compose files in a directory, need nothing special: list that directory as a root and mount it.
 - **Standalone containers,** started with `docker run`, are listed and checked but never deployed; update them by hand.
 - **Every file a stack uses** must be visible to the agent at the same path, including an `env_file` or `include` outside the project folder. Otherwise ddum refuses to deploy it, and says which file. Bind-mount sources are the exception: Docker resolves those on the host, so they can be anywhere.
+
+### Common layouts
+
+Each layout shows the agent's `environment` and `volumes`. The agent's other settings stay as they are.
+
+**A folder per stack under `/opt/stacks`** (the default in [`compose.example.yaml`](../compose.example.yaml), and Dockge's default):
+
+```text
+/opt/stacks/
+  ddum/compose.yaml          ddum itself: here, the bot can be updated from Discord
+  nextcloud/compose.yaml
+  nextcloud/.env
+  jellyfin/compose.yaml
+```
+
+```yaml
+    environment:
+      COMPOSE_ALLOWED_ROOTS: /opt/stacks
+    volumes:
+      - /opt/stacks:/opt/stacks
+```
+
+**Stacks in more than one place,** such as an older folder and your home folder:
+
+```yaml
+    environment:
+      COMPOSE_ALLOWED_ROOTS: /opt/stacks,/srv/compose,/home/you/apps
+    volumes:
+      - /opt/stacks:/opt/stacks
+      - /srv/compose:/srv/compose
+      - /home/you/apps:/home/you/apps
+```
+
+**A Portainer host.** Portainer's stacks need no root. Add one only for plain Compose projects on the host, such as Portainer itself ([Updating Portainer itself](#updating-portainer-itself)):
+
+```yaml
+    environment:
+      PORTAINER_URL: https://192.168.1.20:9443
+      PORTAINER_TOKEN: ${PORTAINER_TOKEN:?set it in .env}
+      PORTAINER_ENDPOINT_ID: ${PORTAINER_ENDPOINT_ID:?set it in .env}
+      COMPOSE_ALLOWED_ROOTS: /opt/portainer
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ddum-agent-data:/data
+      - /opt/portainer:/opt/portainer
+```
+
+**Things that don't work as roots:**
+
+- **A path that differs inside the agent,** such as `- /opt/stacks:/stacks`. Compose records the host path, and the agent looks there.
+- **A read-only mount** (`:ro`). The agent has to write the new tag.
+- **A root that doesn't cover the whole stack.** If a stack's `env_file` is in `/etc/myapp`, list `/etc/myapp` too, or move the file into the stack's folder.
+
+To check a stack, run `/stack show`. A stack outside the roots shows the reason it can't be deployed, with what to change ([troubleshooting](troubleshooting.md)).
 
 ## Variables your stacks need
 
@@ -249,7 +305,73 @@ Stacks that Portainer manages are updated through the Portainer API, so the agen
   - updates that keep the same tag, such as `latest` getting a new digest, are deployed with a Git redeploy;
   - **tag changes are held,** because the file lives in your Git repository. Change the tag there; the message links the release notes.
 
-Label Portainer itself `ddum.protected=true` so ddum never stops it.
+### Updating Portainer itself
+
+Portainer and its agents are usually started with `docker run`, so ddum lists them and checks them for updates, but can't deploy them. You can either:
+
+- **update them by hand,** and label them `ddum.protected=true` so ddum never stops them, or `ddum.ignore=true` to hide their notices too; or
+- **let ddum update them,** by running each one as a plain Compose project under one of its agent's roots. ddum then offers each Portainer release like any other update.
+
+For the second, put the server's file on the Portainer server's host:
+
+```yaml
+# /opt/portainer/portainer/compose.yaml
+name: portainer
+services:
+  portainer:
+    image: portainer/portainer-ce:2.45.4    # or portainer-ee; a version tag, not latest
+    container_name: portainer
+    restart: always
+    ports:
+      - "8000:8000"
+      - "9443:9443"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - portainer_data:/data
+volumes:
+  portainer_data:
+    external: true    # the volume your Portainer already uses; Compose never removes it
+```
+
+And put an agent's file on each host that runs one:
+
+```yaml
+# /opt/portainer/portainer-agent/compose.yaml
+name: portainer-agent
+services:
+  portainer_agent:
+    image: portainer/agent:2.45.4           # the same version as the server
+    container_name: portainer_agent
+    restart: always
+    ports:
+      - "9001:9001"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /var/lib/docker/volumes:/var/lib/docker/volumes   # <Docker data root>/volumes
+      - /:/host
+```
+
+Copy the ports, volumes and image from your current containers (`docker inspect portainer`), so nothing else changes. If Docker's data root isn't `/var/lib/docker` (`docker info --format '{{.DockerRootDir}}'`), use its `volumes` folder in the agent's file.
+
+Then switch over, one host at a time:
+
+1. **Give the host's ddum agent the root:** add `COMPOSE_ALLOWED_ROOTS: /opt/portainer` and the mount `- /opt/portainer:/opt/portainer` ([common layouts](#common-layouts)), then redeploy the agent. On a Portainer host, the agent's own stack is still changed in Portainer, before Portainer is moved.
+2. **Back up Portainer's data**, the `portainer_data` volume, on the server's host.
+3. **Replace the container.** Portainer's web UI, or that host's agent, drops for a few seconds:
+
+   ```sh
+   docker stop portainer && docker rename portainer portainer-old
+   docker compose -f /opt/portainer/portainer/compose.yaml up -d
+   ```
+
+   For an agent, use `portainer_agent` and `/opt/portainer/portainer-agent/compose.yaml`. When it works, `docker rm portainer-old`.
+4. **Optionally, stay on one major version:** `/policy set scope:stack target:portainer tag_track:same-major`, and the same for each host's `portainer-agent` stack.
+
+**Worth knowing:**
+
+- **Use a plain Compose project, not a Portainer stack.** As a Portainer stack, the server would be redeploying itself through the API that's doing the deploy. For an agent, a plain project also means a rebuilt host can be connected before Portainer is back.
+- **Update the server first, then the agents to the same version.** An update group can't do this for you, because groups stay on one host.
+- **If an update breaks the server,** roll it back from Discord: a plain Compose project doesn't need Portainer to roll back. Or put the old tag back in its `compose.yaml` and run `docker compose up -d` on the host.
 
 ## Secrets
 
@@ -337,7 +459,7 @@ Without the bot's login, the image shows as untracked ("not found in its registr
 - **The bot** is updated like any other container, but never automatically. Its update arrives as its own **🤖 ddum bot update available** message. Approving it asks for confirmation, because the bot restarts. The agent on its host deploys it. If the new bot does not come up healthy, the agent restores the previous one.
 - **Agents** are protected and never update themselves. Update them by hand: change the image tag in the agent's `compose.yaml` and run `docker compose up -d`.
 
-For the bot to be updatable, its `compose.yaml` must be under one of its agent's `COMPOSE_ALLOWED_ROOTS`, and it must run a published image pinned to a version (`ghcr.io/dragondrew/ddum-bot:0.10.0`, not `latest`). ddum can't see updates for an image you built locally.
+For the bot to be updatable, its `compose.yaml` must be under one of its agent's `COMPOSE_ALLOWED_ROOTS`, and it must run a published image pinned to a version (`ghcr.io/dragondrew/ddum-bot:0.11.0`, not `latest`). ddum can't see updates for an image you built locally.
 
 **Upgrading across releases:** update the bot first, then each agent. Read the [changelog](../CHANGELOG.md) first, for anything a release needs from you. Each release is signed: the [release workflow](../.github/workflows/release.yml) has the command to check a signature.
 

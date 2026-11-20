@@ -144,7 +144,7 @@ ddum never updates its agents (they are protected), so after a release you updat
 | `protected: update this component manually…` | The container is a ddum agent or has `ddum.protected=true`. Update it yourself, then run `/update check`. |
 | `host pending approval` | Approve the host. |
 | `agent offline` | See [a host is offline](#a-host-is-offline). |
-| `manual update required (standalone_manual)` | A container started with `docker run`. Recreate it yourself with the new image. |
+| `manual update required (standalone_manual)` | A container started with `docker run`. Recreate it yourself with the new image, or move it into a Compose project under `COMPOSE_ALLOWED_ROOTS` so ddum can update it (for Portainer, see [Updating Portainer itself](operator-guide.md#updating-portainer-itself)). |
 | `manual update required (compose_files_unavailable: … not under COMPOSE_ALLOWED_ROOTS)` | Add the stack's directory to `COMPOSE_ALLOWED_ROOTS`. |
 | `manual update required (compose_files_unavailable: … mount it at the same path …)` | Mount the directory into the agent **at the same path** as on the host, read-write. See [mounts](operator-guide.md#mounts-and-allowed-roots). |
 | `manual update required (replicas_unsupported: service …)` | A service runs more than one replica. Not supported yet. |

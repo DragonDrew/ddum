@@ -54,9 +54,10 @@ You can also label each container with `ddum.group=<name>`. A group stays on one
 1. Create a Discord bot, invite it to your server, and make a private channel for it. [Full steps](docs/operator-guide.md#discord).
 2. Copy [`example.env`](example.env) to `.env`, and fill in your Discord IDs and token. Generate the two keys as the file says.
 3. Copy [`compose.example.yaml`](compose.example.yaml) to `compose.yaml`, next to `.env`.
-4. Start it: `docker compose up -d`
-5. In Discord, approve the new host.
-6. Run `/update check`, and approve an update to see it through.
+4. Tell the agent where your stacks are. It expects plain Compose stacks under `/opt/stacks`. If yours are somewhere else, change the folder as [Compose roots](#compose-roots) shows. Portainer stacks need no folder.
+5. Start it: `docker compose up -d`
+6. In Discord, approve the new host.
+7. Run `/update check`, and approve an update to see it through.
 
 The files are the full reference. A minimal version looks like this:
 
@@ -64,7 +65,7 @@ The files are the full reference. A minimal version looks like this:
 # compose.yaml (excerpt)
 services:
   ddum-bot:
-    image: ghcr.io/dragondrew/ddum-bot:0.10.0
+    image: ghcr.io/dragondrew/ddum-bot:0.11.0
     environment:
       DISCORD_TOKEN: ${DISCORD_TOKEN}
       DISCORD_APPLICATION_ID: ${DISCORD_APPLICATION_ID}
@@ -76,14 +77,16 @@ services:
       - ddum-bot-data:/data
 
   ddum-agent:
-    image: ghcr.io/dragondrew/ddum-agent:0.10.0
+    image: ghcr.io/dragondrew/ddum-agent:0.11.0
     environment:
       BOT_URL: http://ddum-bot:8080
       AGENT_SHARED_KEY: ${AGENT_SHARED_KEY}
       AGENT_ID: ${AGENT_ID}
+      COMPOSE_ALLOWED_ROOTS: /opt/stacks     # the folders the agent may edit
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - ddum-agent-data:/data
+      - /opt/stacks:/opt/stacks              # same path inside as on the host
 ```
 
 ```sh
@@ -96,6 +99,49 @@ AUTHORIZED_DISCORD_IDS=your-user-id
 AGENT_SHARED_KEY=output-of-openssl-rand-hex-32
 AGENT_ID=output-of-ddum-agent-gen-id
 ```
+
+## Compose roots
+
+To update a plain Compose stack, the agent edits the image tag in the stack's files and runs `docker compose` on them. It only does that for stacks under a folder listed in `COMPOSE_ALLOWED_ROOTS`, and only when that folder is mounted into the agent **at the same path as on the host**, read-write. Stacks elsewhere are still checked for updates, but show as held with "manual update required".
+
+**One folder of stacks** (the default), with one folder per stack, such as `/opt/stacks/nextcloud/compose.yaml`:
+
+```yaml
+    environment:
+      COMPOSE_ALLOWED_ROOTS: /opt/stacks
+    volumes:
+      - /opt/stacks:/opt/stacks
+```
+
+**Several folders,** comma-separated, each one mounted:
+
+```yaml
+    environment:
+      COMPOSE_ALLOWED_ROOTS: /opt/stacks,/srv/compose,/home/you/apps
+    volumes:
+      - /opt/stacks:/opt/stacks
+      - /srv/compose:/srv/compose
+      - /home/you/apps:/home/you/apps
+```
+
+**Dockge,** which keeps its stacks in `/opt/stacks` by default, works with the default above.
+
+**A Portainer host** needs no root for Portainer's own stacks, because they're updated through Portainer's API. Add a root only for plain Compose projects kept on the host. For example, Portainer itself, kept in `/opt/portainer` so ddum can update it too ([how](docs/operator-guide.md#updating-portainer-itself)):
+
+```yaml
+    environment:
+      PORTAINER_URL: https://192.168.1.20:9443
+      PORTAINER_TOKEN: ${PORTAINER_TOKEN}
+      PORTAINER_ENDPOINT_ID: ${PORTAINER_ENDPOINT_ID}
+      COMPOSE_ALLOWED_ROOTS: /opt/portainer
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ddum-agent-data:/data
+      - /opt/portainer:/opt/portainer
+```
+
+Keep the list to the folders ddum should edit. A stack's whole folder must be inside a root, including any `env_file` or `include` it uses. Keep ddum's own `compose.yaml` in a root too, such as `/opt/stacks/ddum`, so the bot can be updated from Discord. More in the [operator guide](docs/operator-guide.md#mounts-and-allowed-roots).
+
 ## Documentation
 
 - [Operator guide](docs/operator-guide.md): hosts, Portainer, Compose stacks, backups, upgrading

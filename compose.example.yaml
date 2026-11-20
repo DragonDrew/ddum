@@ -17,7 +17,7 @@ services:
 
   # Discord bot, and the API the agents report to.
   ddum-bot:
-    image: ghcr.io/dragondrew/ddum-bot:0.10.0
+    image: ghcr.io/dragondrew/ddum-bot:0.11.0
     restart: unless-stopped
     labels:
       ddum.self: "bot"          # marks ddum's own container; the agent updates it, after confirmation
@@ -52,7 +52,7 @@ services:
 
   # This host's agent. Finds the stacks here and applies the updates you approve.
   ddum-agent:
-    image: ghcr.io/dragondrew/ddum-agent:0.10.0
+    image: ghcr.io/dragondrew/ddum-agent:0.11.0
     restart: unless-stopped
     depends_on:
       ddum-bot:
@@ -70,7 +70,9 @@ services:
       TZ: ${TZ:-UTC}
       LOG_LEVEL: ${LOG_LEVEL:-info}
       GHCR_TOKEN: ${GHCR_TOKEN:-}
-      # Plain Compose stacks: the folders the agent may edit (same path inside and outside)
+      # Plain Compose stacks: the folders the agent may edit, comma-separated, each mounted
+      # below at the same path. For example /opt/stacks,/srv/compose. Portainer stacks need
+      # none. See "Compose roots" in the README.
       COMPOSE_ALLOWED_ROOTS: ${COMPOSE_ALLOWED_ROOTS:-/opt/stacks}
       # Variables your stacks need from the agent's environment. Add STACK_ENV_<NAME> lines
       # in .env; they're passed through here by name. See "Compose stacks" in .env.
@@ -88,8 +90,10 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock   # full control of this host's Docker
       - ddum-agent-data:/data                       # the agent's key, journal and snapshots
       # The stacks folder, mounted at the same path inside as on the host. Add more folders
-      # here, and list them in COMPOSE_ALLOWED_ROOTS.
+      # here, and list them in COMPOSE_ALLOWED_ROOTS:
       - /opt/stacks:/opt/stacks
+      # - /srv/compose:/srv/compose
+      # - /opt/portainer:/opt/portainer    # Portainer itself as a Compose project, see the operator guide
       # A Portainer CA certificate, if you use PORTAINER_CA_FILE:
       # - ./portainer-ca.pem:/run/portainer-ca.pem:ro
 
