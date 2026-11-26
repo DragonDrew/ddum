@@ -630,8 +630,8 @@ func LinkExists(ctx context.Context, client *http.Client, url string) bool {
 	return resp.StatusCode >= 200 && resp.StatusCode < 300
 }
 
-// ReleaseURL builds the release link for an update from image metadata
-// : GitHub releases when the source is a GitHub repository,
+// ReleaseURL builds the release link for an update from image metadata:
+// GitHub releases when the source is a GitHub repository,
 // otherwise the image URL or documentation, otherwise nothing.
 func ReleaseURL(meta map[string]string, kind, tag string) string {
 	if repo := githubRepo(meta[keySource]); repo != "" {

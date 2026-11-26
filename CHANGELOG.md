@@ -2,6 +2,17 @@
 
 What changed in each release, and what to do about it.
 
+## 0.12.0 (2026-11-26)
+
+More tag styles are tracked by version.
+
+**Upgrading:** no database changes. The new tag matching is in the bot, so update the bot; the agents can follow in any order. If you roll back, 0.11.0 starts on the same database.
+
+### Changes
+
+- **More version tags.** Single-number tags (`valkey:9`, `redis:7-alpine`), tags with a word prefix (`release-1.2.3`, `version-4.0.20.3014`), dashed dates (`2026-11-20`), and tags with a build hash (Plex's `-b3b13e506`) are now tracked by version. A floating major such as `redis:7-alpine` can now be offered `8-alpine`, which still needs approval. To keep the old behaviour, set `tag_track` to `same-major` on that container.
+- **Fixes:** a database read that failed partway is now reported, where five places could take it for a shorter result. `/policy` now says it takes a group as well. Messages about rollbacks no longer mention saved files, which snapshots haven't kept since 0.10.
+
 ## 0.11.0 (2026-11-16)
 
 New major versions are now offered by default, with security updates to Go and its dependencies.

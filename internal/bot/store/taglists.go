@@ -8,8 +8,7 @@ import (
 	"time"
 )
 
-// TagList is a repository's tag list kept across check cycles and restarts
-// .
+// TagList is a repository's tag list kept across check cycles and restarts.
 type TagList struct {
 	Tags   []string  // version tags, in listing order; nothing else is selectable
 	Tail   []string  // the last two tags as listed, of any kind

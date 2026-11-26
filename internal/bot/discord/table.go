@@ -47,9 +47,11 @@ func table(cols []column, rows [][]string, limit int) string {
 		for i, cell := range cells {
 			pad := strings.Repeat(" ", widths[i]-utf8.RuneCountInString(cell))
 			if cols[i].right {
-				b.WriteString(pad + cell)
+				b.WriteString(pad)
+				b.WriteString(cell)
 			} else {
-				b.WriteString(cell + pad)
+				b.WriteString(cell)
+				b.WriteString(pad)
 			}
 			if i < len(cells)-1 {
 				b.WriteString("  ")

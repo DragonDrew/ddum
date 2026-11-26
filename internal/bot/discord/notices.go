@@ -39,8 +39,8 @@ func (n *Notifier) HostOnline(ctx context.Context, h store.Host) {
 	})
 }
 
-// ClockSkew reports a validly signed request rejected for its timestamp
-// . The caller rate-limits it.
+// ClockSkew reports a validly signed request rejected for its timestamp.
+// The caller rate-limits it.
 func (n *Notifier) ClockSkew(ctx context.Context, agentID, hostName string, skew time.Duration) {
 	name := hostName
 	if name == "" {

@@ -1,5 +1,5 @@
-// Package docker is the agent's thin interface over the Docker Engine API
-// . Discovery depends only on the Engine interface so tests can
+// Package docker is the agent's thin interface over the Docker Engine API.
+// Discovery depends only on the Engine interface so tests can
 // use the Fake.
 package docker
 

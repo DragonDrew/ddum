@@ -1,5 +1,5 @@
 // Package scheduler runs the bot's periodic jobs: registry checks,
-// offline detection, and retention.
+// offline detection, agent version notices, and retention.
 package scheduler
 
 import (

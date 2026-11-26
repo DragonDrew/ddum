@@ -22,11 +22,12 @@ var (
 	ErrChangedOutside      = errors.New("a container changed outside ddum since this deploy")
 )
 
-// Snapshot statuses.
+// Snapshot statuses. The schema also allows "pruned", which
+// nothing sets: a snapshot the agent prunes drops out of its inventory, and
+// syncSnapshots marks it unavailable.
 const (
 	SnapshotAvailable   = "available"
 	SnapshotConsumed    = "consumed"
-	SnapshotPruned      = "pruned"
 	SnapshotUnavailable = "unavailable"
 )
 
@@ -159,7 +160,11 @@ func (s *Store) syncSnapshots(ctx context.Context, tx *sql.Tx, stackID string, u
 		}
 		rs = append(rs, r)
 	}
+	err = rows.Err()
 	rows.Close()
+	if err != nil {
+		return err
+	}
 	for _, r := range rs {
 		want := SnapshotUnavailable
 		if slices.Contains(usable, r.id) {

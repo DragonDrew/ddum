@@ -48,7 +48,7 @@ check: lint test build-linux
 fmt:
 	gofmt -w .
 
-## e2e: end-to-end rig against real Docker; needs a linux/amd64 Docker host
+## e2e: end-to-end rig against real Docker; needs a Linux Docker host (amd64 or arm64)
 e2e:
 	bash deploy/test-rig/run.sh
 

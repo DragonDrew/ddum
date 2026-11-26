@@ -113,8 +113,8 @@ type InventoryPlan struct {
 }
 
 // PlanInventory matches a full snapshot against stored state by identity —
-// stacks by fingerprint, containers by identity key, never by Docker ID
-// . Stored objects absent from the snapshot become missing;
+// stacks by fingerprint, containers by identity key, never by Docker ID.
+// Stored objects absent from the snapshot become missing;
 // missing objects that reappear become present again. A provider
 // change keeps the stack's identity.
 func PlanInventory(existing []ExistingStack, incoming []protocol.Stack) InventoryPlan {

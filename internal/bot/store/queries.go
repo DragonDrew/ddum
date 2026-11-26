@@ -294,8 +294,7 @@ type DiscordMessage struct {
 	MessageID  string
 }
 
-// AddDiscordMessage records a posted message so it can be edited later
-// .
+// AddDiscordMessage records a posted message so it can be edited later.
 func (s *Store) AddDiscordMessage(ctx context.Context, entityType, entityID, channelID, messageID string, at time.Time) error {
 	return s.WriteTx(ctx, func(tx *sql.Tx) error {
 		_, err := tx.ExecContext(ctx, `

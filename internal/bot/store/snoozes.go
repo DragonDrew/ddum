@@ -76,7 +76,11 @@ func (s *Store) UnsnoozeAll(ctx context.Context, by Actor, at time.Time) (int, e
 			}
 			ids = append(ids, id)
 		}
+		err = rows.Err()
 		rows.Close()
+		if err != nil {
+			return err
+		}
 		for _, id := range ids {
 			n, err := s.removeActiveSnoozes(ctx, tx, id, by, at)
 			if err != nil {
@@ -132,7 +136,11 @@ func (s *Store) TakeExpiredSnoozes(ctx context.Context, now time.Time) ([]Expire
 			}
 			rs = append(rs, r)
 		}
+		err = rows.Err()
 		rows.Close()
+		if err != nil {
+			return err
+		}
 		for _, r := range rs {
 			if _, err := tx.ExecContext(ctx, `UPDATE snoozes SET expiry_notified_at = ? WHERE id = ?`, FormatTime(now), r.id); err != nil {
 				return err

@@ -8,8 +8,7 @@ import (
 	"github.com/DragonDrew/ddum/internal/bot/store"
 )
 
-// Retention deletes operation events older than 180 days once a day
-// .
+// Retention deletes operation events older than 180 days once a day.
 type Retention struct {
 	Store *store.Store
 	Log   *slog.Logger

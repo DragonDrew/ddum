@@ -1,6 +1,5 @@
 // Package client is the agent's side of the agent–bot protocol: signed
-// requests, verified responses, the poll loop, and inventory submission
-// .
+// requests, verified responses, the poll loop, and inventory submission.
 package client
 
 import (

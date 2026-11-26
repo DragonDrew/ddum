@@ -326,8 +326,8 @@ func nonNilMap(m map[string]string) map[string]string {
 	return m
 }
 
-// discoveryFailed reports an inventory the agent sent without reading Docker
-// : it has no stacks and every provider is in error.
+// discoveryFailed reports an inventory the agent sent without reading Docker:
+// it has no stacks and every provider is in error.
 func discoveryFailed(inv protocol.Inventory) bool {
 	if len(inv.Stacks) > 0 || len(inv.Providers) == 0 {
 		return false

@@ -15,41 +15,67 @@ const (
 	TrackAny       = "any"
 )
 
-// versionTagRE matches a version tag: optional "v", two to four numeric
-// parts, and an optional suffix.
-var versionTagRE = regexp.MustCompile(`^(v?)(\d+(?:\.\d+){1,3})([-_.][A-Za-z0-9._-]+)?$`)
+// versionTagRE matches a version tag. Its parts are:
+//   - a prefix: any run of words joined by - or _, such as release-, version-,
+//     nightly-version-, or an architecture tag's amd64-;
+//   - an optional "v";
+//   - one to four numeric parts;
+//   - an optional suffix, which is split into a stem and a build counter.
+var versionTagRE = regexp.MustCompile(`^((?:[A-Za-z][A-Za-z0-9]*[-_])*)(v?)(\d+(?:\.\d+){0,3})([-_.][A-Za-z0-9._-]+)?$`)
+
+// dateTagRE matches a date written with dashes, such as 2026-11-20. It is
+// checked first, because versionTagRE would read it as the number 2026 with a
+// stem. Dotted and undotted dates (2026.11.20, 20261120) match versionTagRE.
+var dateTagRE = regexp.MustCompile(`^(\d{4})-(\d{2})-(\d{2})$`)
 
 // buildCounterRE matches a trailing build counter. Only ls, r, and build are
 // recognized, so base-image variants such as -alpine3.20 stay in the stem.
 var buildCounterRE = regexp.MustCompile(`[-_.](ls|r|build)(\d+)$`)
 
-var preReleaseWords = []string{"alpha", "beta", "rc", "dev", "nightly", "pre", "snapshot"}
+// hashRE matches a commit-hash suffix, such as Plex's -b3b13e506. Its build
+// hashes change with every release, so it is dropped from the stem. A suffix
+// is only a hash if it also has a digit and a letter (see isHash).
+var hashRE = regexp.MustCompile(`^-[0-9a-f]{7,40}$`)
+
+var preReleaseWords = []string{"alpha", "beta", "rc", "dev", "develop", "nightly", "pre", "snapshot", "testing", "unstable"}
 
 // VersionTag is a parsed version tag.
 type VersionTag struct {
 	Raw      string
-	Prefix   string // "v" or ""
+	Prefix   string // word prefix plus "v", such as "v", "release-" or ""
 	Numbers  []int
-	Stem     string // suffix without the build counter
+	Stem     string // suffix without the build counter or commit hash
 	Build    int
 	HasBuild bool
 }
 
 // ParseVersionTag parses tag, reporting false if it is not a version tag.
 func ParseVersionTag(tag string) (VersionTag, bool) {
+	if m := dateTagRE.FindStringSubmatch(tag); m != nil {
+		v := VersionTag{Raw: tag}
+		for _, p := range m[1:] {
+			n, _ := strconv.Atoi(p) // four and two digits: always fits
+			v.Numbers = append(v.Numbers, n)
+		}
+		return v, true
+	}
 	m := versionTagRE.FindStringSubmatch(tag)
 	if m == nil {
 		return VersionTag{}, false
 	}
-	v := VersionTag{Raw: tag, Prefix: m[1]}
-	for _, p := range strings.Split(m[2], ".") {
+	v := VersionTag{Raw: tag, Prefix: m[1] + m[2]}
+	for _, p := range strings.Split(m[3], ".") {
 		n, err := strconv.Atoi(p)
 		if err != nil {
 			return VersionTag{}, false // too large for int
 		}
 		v.Numbers = append(v.Numbers, n)
 	}
-	suffix := m[3]
+	// A word and one bare number, such as pr-12, is an ID, not a version.
+	if m[1] != "" && len(v.Numbers) == 1 {
+		return VersionTag{}, false
+	}
+	suffix := m[4]
 	if b := buildCounterRE.FindStringSubmatchIndex(suffix); b != nil {
 		n, err := strconv.Atoi(suffix[b[4]:b[5]])
 		if err == nil {
@@ -57,13 +83,26 @@ func ParseVersionTag(tag string) (VersionTag, bool) {
 			suffix = suffix[:b[0]]
 		}
 	}
+	if isHash(suffix) {
+		suffix = ""
+	}
 	v.Stem = suffix
 	return v, true
 }
 
-// IsPreRelease reports whether the stem marks a pre-release.
+// isHash reports whether suffix is a commit-hash-like part such as -b3b13e506:
+// hex of 7 to 40 characters with at least one digit and one letter, so that
+// a word such as -cafe or a number such as -1234567 is not mistaken for one.
+func isHash(suffix string) bool {
+	if !hashRE.MatchString(suffix) {
+		return false
+	}
+	return strings.ContainsAny(suffix, "0123456789") && strings.ContainsAny(suffix, "abcdef")
+}
+
+// IsPreRelease reports whether the tag's prefix or stem marks a pre-release.
 func (v VersionTag) IsPreRelease() bool {
-	s := strings.ToLower(v.Stem)
+	s := strings.ToLower(v.Prefix + v.Stem)
 	for _, w := range preReleaseWords {
 		if strings.Contains(s, w) {
 			return true
@@ -147,17 +186,17 @@ func satisfiesTrack(cur, cand VersionTag, track string) bool {
 	case TrackPinned:
 		return false
 	case TrackSameMinor:
-		return cand.Numbers[0] == cur.Numbers[0] && cand.Numbers[1] == cur.Numbers[1]
+		return partAt(cand.Numbers, 0) == partAt(cur.Numbers, 0) && partAt(cand.Numbers, 1) == partAt(cur.Numbers, 1)
 	case TrackSameMajor:
-		return cand.Numbers[0] == cur.Numbers[0]
+		return partAt(cand.Numbers, 0) == partAt(cur.Numbers, 0)
 	case TrackAny:
 		return true
 	}
 	return false
 }
 
-// SelectVersion picks the newest tag that may replace current under track
-// . It returns false when there is none.
+// SelectVersion picks the newest tag that may replace current under track.
+// It returns false when there is none.
 //
 // pushOrdered says tags are listed in push order, oldest first (ghcr.io,
 // lscr.io). Two tags with the same numbers are then ordered by position, not

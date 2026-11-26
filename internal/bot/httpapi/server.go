@@ -289,7 +289,7 @@ func (s *Server) verifyLegacy(w http.ResponseWriter, r *http.Request, state stor
 	if state.Public != "" || !state.Approved {
 		s.write(w, r, an, reply{http.StatusUpgradeRequired, protocol.ErrorResponse{Error: protocol.ErrorBody{
 			Code: protocol.CodeProtocolUnsupported, Message: "protocol 1 is only accepted from approved agents without a key",
-			Supported: []int{2, protocol.MaxSupportedVersion},
+			Supported: []int{protocol.Version, protocol.MaxSupportedVersion},
 		}}})
 		return an, true
 	}
@@ -344,7 +344,7 @@ func (s *Server) refuse(w http.ResponseWriter, r *http.Request, err error) {
 	if splitErr != nil {
 		host = r.RemoteAddr
 	}
-	now := time.Now()
+	now := s.now()
 	s.authMu.Lock()
 	last, seen := s.refused[host]
 	log := !seen || now.Sub(last) >= time.Minute

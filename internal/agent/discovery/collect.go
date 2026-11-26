@@ -35,6 +35,23 @@ func (OSFiles) Resolve(p string) (string, error) {
 	return filepath.ToSlash(resolved), nil
 }
 
+// ReadFile implements FileChecker. Compose and env files are small; anything
+// over 1 MiB is refused.
+func (OSFiles) ReadFile(p string) ([]byte, error) {
+	resolved, err := filepath.EvalSymlinks(p)
+	if err != nil {
+		return nil, err
+	}
+	st, err := os.Stat(resolved)
+	if err != nil {
+		return nil, err
+	}
+	if st.Size() > 1<<20 {
+		return nil, fmt.Errorf("%s is larger than 1 MiB", p)
+	}
+	return os.ReadFile(resolved)
+}
+
 // Snapshot is one complete inventory collection.
 type Snapshot struct {
 	Docker    protocol.DockerInfo
@@ -57,9 +74,11 @@ type Collector struct {
 	// PortainerTimeout limits the Portainer calls of one collection (default 20 s).
 	PortainerTimeout time.Duration
 
+	// mu guards files, which the executor clears through ForgetPortainerFile.
 	mu    sync.Mutex
 	files map[int]cachedFile
-	// lastPortainer is the latest successful listing.
+	// lastPortainer is the latest successful listing. Only Collect uses it,
+	// and only the poll loop calls Collect.
 	lastPortainer map[string]PortainerStack
 }
 
@@ -173,8 +192,8 @@ func (c *Collector) observe(ctx context.Context) ([]Observed, error) {
 // `docker pull` on the host can cause; Docker 29.1 keeps the image but forgets
 // its digest. Either way the image ID is the registry digest, so the digest is
 // still known and the container stays tracked: it does run an older image than
-// its tag names, and a build that was never pushed is recognised by its checks
-// . Other stores keep such an image with no way to tell its digest.
+// its tag names, and a build that was never pushed is recognised by its checks.
+// Other stores keep such an image with no way to tell its digest.
 func (c *Collector) goneImage(ctx context.Context, ctr docker.Container) *docker.Image {
 	ok, err := c.Engine.ImageIDIsDigest(ctx)
 	if err != nil || !ok || !strings.HasPrefix(ctr.ImageID, "sha256:") {
@@ -195,23 +214,6 @@ func (c *Collector) statuses(status, detail string) []protocol.ProviderStatus {
 		out = append(out, s)
 	}
 	return out
-}
-
-// ReadFile implements FileChecker. Compose and env files are small; anything
-// over 1 MiB is refused.
-func (OSFiles) ReadFile(p string) ([]byte, error) {
-	resolved, err := filepath.EvalSymlinks(p)
-	if err != nil {
-		return nil, err
-	}
-	st, err := os.Stat(resolved)
-	if err != nil {
-		return nil, err
-	}
-	if st.Size() > 1<<20 {
-		return nil, fmt.Errorf("%s is larger than 1 MiB", p)
-	}
-	return os.ReadFile(resolved)
 }
 
 // PortainerLister is the part of the Portainer API discovery uses.

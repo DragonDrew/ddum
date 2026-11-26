@@ -219,8 +219,8 @@ func (s *Store) RemoveMember(ctx context.Context, containerID string, by Actor, 
 	return groupID, err
 }
 
-// seedGroupLabel applies a container's ddum.group label during inventory
-// : the group is created if no group has that name, and the container
+// seedGroupLabel applies a container's ddum.group label during inventory:
+// the group is created if no group has that name, and the container
 // joins only if it is in no group and a user has not removed it before.
 func (s *Store) seedGroupLabel(ctx context.Context, tx *sql.Tx, containerID, label string, at time.Time) error {
 	label = strings.TrimSpace(label)

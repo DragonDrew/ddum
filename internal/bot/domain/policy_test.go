@@ -63,7 +63,13 @@ func TestClassifyTracking(t *testing.T) {
 	}{
 		{"version tag", "nginx:1.27-alpine", []string{"nginx@sha256:" + hex64("a")}, false, TrackingVersion, "1.27-alpine"},
 		{"latest implicit", "nginx", []string{"nginx@sha256:" + hex64("a")}, false, TrackingDigest, "latest"},
-		{"floating major", "redis:7-alpine", []string{"redis@sha256:" + hex64("b")}, false, TrackingDigest, "7-alpine"},
+		{"single-part tag", "redis:7-alpine", []string{"redis@sha256:" + hex64("b")}, false, TrackingVersion, "7-alpine"},
+		{"release prefix", "ghcr.io/a/b:release-1.2.3", []string{"ghcr.io/a/b@sha256:" + hex64("d")}, false, TrackingVersion, "release-1.2.3"},
+		{"plex hash tag", "lscr.io/linuxserver/plex:1.43.5.11079-b3b13e506-ls334", []string{"lscr.io/linuxserver/plex@sha256:" + hex64("e")}, false, TrackingVersion, "1.43.5.11079-b3b13e506-ls334"},
+		{"dated tag", "ghcr.io/a/b:2026-11-20", []string{"ghcr.io/a/b@sha256:" + hex64("f")}, false, TrackingVersion, "2026-11-20"},
+		// The stem holds two component versions, so no other tag matches it: no
+		// version offers, as before. Rebuilds of the current tag still count.
+		{"composite tag: version mode, no offers", "ghcr.io/immich-app/postgres:14-vectorchord0.4.3-pgvectors0.2.0", []string{"ghcr.io/immich-app/postgres@sha256:" + hex64("a")}, false, TrackingVersion, "14-vectorchord0.4.3-pgvectors0.2.0"},
 		{"pinned digest", "nginx@sha256:" + hex64("a"), []string{"nginx@sha256:" + hex64("a")}, false, TrackingUntracked, ""},
 		{"local build", "myapp:dev", nil, false, TrackingUntracked, "dev"},
 		{"digest of other repo", "ghcr.io/a/b:1.0", []string{"docker.io/a/b@sha256:" + hex64("c")}, false, TrackingUntracked, "1.0"},

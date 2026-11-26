@@ -92,7 +92,7 @@ func TestInvalid(t *testing.T) {
 		want string
 	}{
 		"missing bot url":   {map[string]string{"BOT_URL": ""}, "BOT_URL"},
-		"bot url no scheme": {map[string]string{"BOT_URL": "192.168.1.10:8080"}, "BOT_URL must be an http:// URL"},
+		"bot url no scheme": {map[string]string{"BOT_URL": "192.168.1.10:8080"}, "BOT_URL must be an http(s) URL"},
 		"short key":         {map[string]string{"AGENT_SHARED_KEY": "short"}, "AGENT_SHARED_KEY must be at least 32"},
 		"bad agent id":      {map[string]string{"AGENT_ID": "host-3"}, "AGENT_ID"},
 		"unknown provider":  {map[string]string{"ENABLED_PROVIDERS": "compose,swarm"}, `unknown provider "swarm"`},

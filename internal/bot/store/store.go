@@ -163,8 +163,7 @@ func (s *Store) Ping(ctx context.Context) error {
 func (s *Store) Reader() *sql.DB { return s.r }
 
 // WriteTx runs fn in a write transaction, committing if fn returns nil.
-// Every state change and its audit event must go through one WriteTx
-// .
+// Every state change and its audit event must go through one WriteTx.
 func (s *Store) WriteTx(ctx context.Context, fn func(tx *sql.Tx) error) (err error) {
 	tx, err := s.w.BeginTx(ctx, nil)
 	if err != nil {

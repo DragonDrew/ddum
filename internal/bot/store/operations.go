@@ -19,7 +19,6 @@ var (
 	ErrStaleOffer       = errors.New("offer is stale")
 	ErrAlreadyApproved  = errors.New("offer already approved")
 	ErrNothingToApprove = errors.New("nothing in this offer can be approved")
-	ErrHeld             = errors.New("scope is held")
 	ErrNotCancellable   = errors.New("operation can no longer be cancelled")
 )
 
@@ -824,7 +823,7 @@ func ChangedNothing(state, code string) bool {
 }
 
 // releaseOperations ends a host's unfinished operations when its agent goes
-// away for good: queued and dispatched ones return their updates to pending,
+// away for good: queued and dispatched ones return their updates to detected,
 // and the rest can no longer report an end, which would block the host (and
 // any /stack merge) for ever.
 func (s *Store) releaseOperations(ctx context.Context, tx *sql.Tx, hostID string, by Actor, at time.Time) ([]Operation, error) {

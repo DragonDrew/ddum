@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # End-to-end rig. Needs Docker with the Compose
-# plugin on a linux/amd64 host; run from the repository root: make e2e.
+# plugin on a Linux host, amd64 or arm64; run from the repository root: make e2e.
 #
 # It starts a local registry, a sample stack, and ddum (bot in
 # DISCORD_MODE=fake plus an agent), pushes new images, approves the update

@@ -527,8 +527,8 @@ func (c *Checker) checkOrigin(ctx context.Context, t tracked, updateID string) {
 // one that a container's platform can run.
 const maxPlatformTries = 5
 
-// runsOn reports whether repo@digest has a build for a container's platform
-// . amd64 hosts skip this: nearly every image has that build, the answer
+// runsOn reports whether repo@digest has a build for a container's platform.
+// amd64 hosts skip this: nearly every image has that build, the answer
 // costs a manifest GET, and a missing one fails harmlessly at the pull.
 func (c *Checker) runsOn(ctx context.Context, repo, digest string, ctr store.Container) (bool, error) {
 	if ctr.Platform == "" || strings.HasPrefix(ctr.Platform, "linux/amd64") {
@@ -649,8 +649,7 @@ func (c *Checker) tags(ctx context.Context, cy *cycle, repo string) ([]string, e
 // found at once, whether it moves latest or not.
 //
 // Lists are kept in the database, so a restart does not list everything
-// again, and hold version tags only, the only ones SelectVersion can pick
-// .
+// again, and hold version tags only, the only ones SelectVersion can pick.
 func (c *Checker) listTags(ctx context.Context, cy *cycle, repo string) ([]string, error) {
 	prev, ok, err := c.Store.TagList(ctx, repo)
 	if err != nil {

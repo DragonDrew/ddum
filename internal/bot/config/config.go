@@ -1,5 +1,5 @@
-// Package config loads and validates the bot's bootstrap configuration
-// . Everything else is managed from Discord.
+// Package config loads and validates the bot's bootstrap configuration.
+// Everything else is managed from Discord.
 package config
 
 import (

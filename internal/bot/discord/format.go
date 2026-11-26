@@ -223,8 +223,7 @@ func yesNo(b bool) string {
 	return "no"
 }
 
-// inventoryAge is the age indicator that must accompany any inventory view
-// .
+// inventoryAge is the age indicator that must accompany any inventory view.
 func inventoryAge(h store.Host) string {
 	s := "Inventory from " + relTime(h.LastInventoryAt)
 	if h.Connectivity == domain.Offline {

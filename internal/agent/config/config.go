@@ -1,5 +1,4 @@
-// Package config loads and validates the agent's bootstrap configuration
-// .
+// Package config loads and validates the agent's bootstrap configuration.
 package config
 
 import (
@@ -98,7 +97,7 @@ func (c *Config) validate() error {
 	warn := func(format string, a ...any) { c.Warnings = append(c.Warnings, fmt.Sprintf(format, a...)) }
 
 	if u, err := url.Parse(c.BotURL); err != nil || (u.Scheme != "http" && u.Scheme != "https") || u.Host == "" {
-		add("BOT_URL must be an http:// URL such as http://192.168.1.10:8080, got %q", c.BotURL)
+		add("BOT_URL must be an http(s) URL such as http://192.168.1.10:8080, got %q", c.BotURL)
 	} else {
 		c.BotURL = strings.TrimRight(c.BotURL, "/")
 	}

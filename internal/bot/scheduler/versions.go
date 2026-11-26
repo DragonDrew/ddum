@@ -70,7 +70,11 @@ func (a *AgentVersions) Sweep(ctx context.Context) {
 	}
 }
 
+// releaseVersion reports whether v looks like a release such as 0.11.0 or
+// v0.11.0. Image tags may be a single number or carry a word prefix,
+// but a ddum release never does, and a development build's short commit hash
+// can be all digits.
 func releaseVersion(v string) bool {
-	_, ok := domain.ParseVersionTag(v)
-	return ok
+	t, ok := domain.ParseVersionTag(v)
+	return ok && len(t.Numbers) >= 2 && (t.Prefix == "" || t.Prefix == "v")
 }

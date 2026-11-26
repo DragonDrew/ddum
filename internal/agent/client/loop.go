@@ -243,11 +243,12 @@ func (l *Loop) writeHeartbeat(wait time.Duration) {
 	deadline := l.Now().Add(wait + heartbeatGrace).Unix()
 	p := filepath.Join(l.DataDir, HeartbeatFile)
 	tmp := p + ".tmp"
-	if err := os.WriteFile(tmp, []byte(strconv.FormatInt(deadline, 10)+"\n"), 0o640); err == nil {
+	err := os.WriteFile(tmp, []byte(strconv.FormatInt(deadline, 10)+"\n"), 0o640)
+	if err == nil {
 		err = os.Rename(tmp, p)
-		if err != nil {
-			l.Log.Warn("write heartbeat", "err", err)
-		}
+	}
+	if err != nil {
+		l.Log.Warn("write heartbeat", "err", err)
 	}
 }
 
@@ -277,8 +278,8 @@ func (l *Loop) LatestStacks() []protocol.Stack {
 }
 
 // flushEvents sends every unacknowledged event and records the bot's acks.
-// Unacknowledged events stay in the journal and are re-sent next time
-// . An operation the bot no longer knows (404) is dropped.
+// Unacknowledged events stay in the journal and are re-sent next time.
+// An operation the bot no longer knows (404) is dropped.
 func (l *Loop) flushEvents(ctx context.Context) error {
 	for id, events := range l.Ops.Pending() {
 		var resp protocol.EventsResponse

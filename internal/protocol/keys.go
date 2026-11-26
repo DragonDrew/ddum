@@ -2,7 +2,6 @@ package protocol
 
 import (
 	"crypto/ed25519"
-	"crypto/hmac"
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/base64"
@@ -189,7 +188,7 @@ func VerifyHTTPResponseV2(resp *http.Response, pinned string, shared []byte, age
 	if pinned != "" && offered != pinned {
 		return "", ErrBotKeyChanged
 	}
-	if pinned == "" && !hmac.Equal([]byte(mac(shared, canonical)), []byte(strings.ToLower(h.Get(HeaderSignature)))) {
+	if pinned == "" && !equalHex(mac(shared, canonical), h.Get(HeaderSignature)) {
 		return "", ErrBadSignature
 	}
 	pub, err := DecodePublicKey(offered)

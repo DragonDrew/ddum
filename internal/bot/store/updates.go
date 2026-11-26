@@ -496,7 +496,11 @@ func (s *Store) markAppliedExternally(ctx context.Context, tx *sql.Tx, container
 			hits = append(hits, hit{id, ref})
 		}
 	}
+	err = rows.Err()
 	rows.Close()
+	if err != nil {
+		return false, err
+	}
 	for _, h := range hits {
 		if _, err := tx.ExecContext(ctx, `UPDATE updates SET status = 'applied', updated_at = ? WHERE id = ?`, FormatTime(at), h.id); err != nil {
 			return false, err

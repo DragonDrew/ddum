@@ -103,7 +103,11 @@ func (s *Store) MergeStacks(ctx context.Context, aID, bID string, by Actor, at t
 			}
 			pairs = append(pairs, p)
 		}
+		err = rows.Err()
 		rows.Close()
+		if err != nil {
+			return err
+		}
 		for _, p := range pairs {
 			if p.oldC == "" {
 				if _, err := tx.ExecContext(ctx, `UPDATE containers SET stack_id = ?, updated_at = ? WHERE id = ?`, old.ID, now, p.newC); err != nil {

@@ -72,7 +72,7 @@ func (r *Router) resultBack(ctx context.Context, opID string) Response {
 func rollbackReason(err error) string {
 	switch {
 	case errors.Is(err, store.ErrSnapshotUnavailable):
-		return "no usable snapshot (" + err.Error() + "). The previous image or saved files are gone."
+		return "no usable snapshot (" + err.Error() + "). The previous image is gone."
 	case errors.Is(err, store.ErrNotLatest):
 		return "a later operation changed this stack, so only the latest one can be rolled back."
 	case errors.Is(err, store.ErrChangedOutside):

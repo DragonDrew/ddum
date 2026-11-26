@@ -487,13 +487,13 @@ func TestTagListsSurviveARestartAndKeepVersionTagsOnly(t *testing.T) {
 	e.check = &Checker{Store: e.db, Registry: reg, Notify: e.notes, Log: e.check.Log, Now: e.check.Now,
 		Interval: 6 * time.Hour, GraceHours: 24}
 	e.push("ver:pr-13")
-	e.push("ver:v9") // not a version tag either
+	e.push("ver:rolling") // not a version tag either; sorts after pr-13
 	e.now = e.now.Add(6 * time.Hour)
 	if e.run(); reg.tags != 0 || reg.after != 1 {
 		t.Fatalf("after restart: listings %d, extensions %d; want one extension", reg.tags, reg.after)
 	}
 	if l, _, _ := e.db.TagList(context.Background(), e.host+"/ver"); strings.Join(l.Tags, ",") != "1.0.0" ||
-		strings.Join(l.Tail, ",") != "pr-13,v9" {
+		strings.Join(l.Tail, ",") != "pr-13,rolling" {
 		t.Fatalf("extended list %+v", l)
 	}
 

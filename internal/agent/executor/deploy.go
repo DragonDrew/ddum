@@ -424,8 +424,7 @@ func composeBase(ci *protocol.ComposeInfo) []string {
 	return args
 }
 
-// composeArgs builds `docker compose ... up -d --no-deps --pull never <svc>...`
-// .
+// composeArgs builds `docker compose ... up -d --no-deps --pull never <svc>...`.
 func composeArgs(ci *protocol.ComposeInfo, services []string) []string {
 	args := append(composeBase(ci), "up", "-d", "--no-deps", "--pull", "never")
 	return append(args, services...)

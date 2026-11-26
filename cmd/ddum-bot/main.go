@@ -252,8 +252,8 @@ func healthcheck() int {
 	return exitOK
 }
 
-// backup writes a consistent copy of the database while the bot runs
-// , for example:
+// backup writes a consistent copy of the database while the bot runs,
+// for example:
 //
 //	docker exec ddum-bot ddum-bot backup /data/ddum-backup.db
 //

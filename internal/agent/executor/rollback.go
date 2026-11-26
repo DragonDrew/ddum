@@ -6,7 +6,6 @@ import (
 	"github.com/distribution/reference"
 
 	"github.com/DragonDrew/ddum/internal/agent/discovery"
-
 	"github.com/DragonDrew/ddum/internal/protocol"
 )
 
@@ -33,7 +32,7 @@ func (x *Executor) planRollback(p protocol.RollbackPayload) ([]rollbackPlan, err
 			return nil, fail(protocol.FailUnsafe, "snapshot %s belongs to another operation", id)
 		}
 		if !x.usable(context.Background(), m) {
-			return nil, fail(protocol.FailIneligible, "snapshot %s is no longer usable (a pinned image or saved file is gone)", id)
+			return nil, fail(protocol.FailIneligible, "snapshot %s is no longer usable (a pinned image is gone)", id)
 		}
 		var st *protocol.Stack
 		for i := range inv {
@@ -257,7 +256,6 @@ func (x *Executor) rollbackLocally(ctx context.Context, snapshotID string, v pro
 	var st *protocol.Stack
 	for _, s := range x.Inventory() {
 		if s.Fingerprint == m.StackFingerprint {
-			s := s
 			st = &s
 		}
 	}
